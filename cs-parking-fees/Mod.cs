@@ -13,14 +13,12 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-using Colossal.Logging;
+using System.Reflection;
 using Colossal.IO.AssetDatabase;
+using Colossal.Logging;
 using Game;
 using Game.Modding;
 using Game.SceneFlow;
-using Unity.Entities;
-using System.Linq;
-using System.Reflection;
 
 namespace ParkingFeeControl
 {
@@ -78,13 +76,21 @@ namespace ParkingFeeControl
             {
                 var localeId = GameManager.instance?.localizationManager?.activeLocaleId;
                 if (!string.IsNullOrEmpty(localeId))
+                {
                     ModLogger.Info($"Game language: {localeId}");
+                }
             }
             catch (System.Exception ex)
             {
                 ModLogger.Debug($"Could not read active locale during load: {ex}");
             }
             ModLogger.Info("============================================");
+
+            if (GameManager.instance is null)
+            {
+                ModLogger.Error("GameManager.instance is null! Cannot load mod.");
+                return;
+            }
 
             // Get mod path from GameManager
             if (GameManager.instance.modManager.TryGetExecutableAsset(this, out var asset))
@@ -109,7 +115,7 @@ namespace ParkingFeeControl
                 Config.LogSettings();
 
                 // Register localization from external JSON files if present, otherwise fall back to embedded LocaleEN
-                var locales = ParkingFeeControl.LocaleFileLoader.LoadDictionaries(ModPath);
+                var locales = LocaleFileLoader.LoadDictionaries(ModPath);
                 if (locales != null)
                 {
                     if (locales.Count > 0)
@@ -119,13 +125,13 @@ namespace ParkingFeeControl
 
                     foreach (var kv in locales)
                     {
-                        GameManager.instance.localizationManager.AddSource(kv.Key, new ParkingFeeControl.LocaleFileLoader.FileDictionarySource(kv.Value));
+                        GameManager.instance.localizationManager.AddSource(kv.Key, new LocaleFileLoader.FileDictionarySource(kv.Value));
                     }
                 }
 
                 // Register parking policy modifier system
-                updateSystem.UpdateAt<ParkingPolicyModifierSystem>(SystemUpdatePhase.GameSimulation);
-                
+                updateSystem.UpdateAt<ParkingPolicyModifierSystem>(SystemUpdatePhase.PreSimulation);
+
                 // Register UI system
                 updateSystem.UpdateAt<UI.ParkingFeeUISystem>(SystemUpdatePhase.UIUpdate);
 

@@ -1,137 +1,345 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+	<!-- ============================================================
+         PROJECT METADATA
+         ============================================================ -->
+
 	<PropertyGroup>
-		<TargetFramework>net472</TargetFramework>
-		<OutputType>Library</OutputType>
-		<RootNamespace>ParkingFeeControl</RootNamespace>
-		<AssemblyName>ParkingFeeControl</AssemblyName>
-		<LangVersion>latest</LangVersion>
-		<Nullable>enable</Nullable>
-		<EnableDefaultCompileItems>true</EnableDefaultCompileItems>
+		<Title>Parking Fee Control</Title>
+		<Product>Parking Fee Control</Product>
+		<Authors>kpgocek, thiago-rcarvalho</Authors>
+		<Description>Parking fee management for Cities: Skylines II.</Description>
 
-		<AssemblyVersion>0.5.0</AssemblyVersion>
-		<FileVersion>0.5.0</FileVersion>
-
-		<!--The file where mod information which is required for publishing mod on PDX mods are stored-->
-		<PublishConfigurationPath>Properties\PublishConfiguration.xml</PublishConfigurationPath>
+		<RepositoryType>git</RepositoryType>
+		<RepositoryUrl>https://github.com/kpgocek/parking-fee-control</RepositoryUrl>
 	</PropertyGroup>
 
-	<!--Imports must be after PropertyGroup block-->
-	<Import Project="$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))\Mod.props" Condition=" '$(OS)' == 'Windows_NT' "/>
-	<Import Project="$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))\Mod.targets" Condition=" '$(OS)' == 'Windows_NT' "/>
-	
-	<ItemGroup>
-		<EmbeddedResource Include="parking-data.json" />
-	</ItemGroup>
-	
-	<ItemGroup>
-		<None Update="Locale\*.json">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-	</ItemGroup>
+
+	<!-- ============================================================
+         PROJECT CONFIGURATION
+         ============================================================ -->
+
+	<PropertyGroup>
+		<TargetFramework>net472</TargetFramework>
+		<AssemblyName>ParkingFeeControl</AssemblyName>
+		<RootNamespace>ParkingFeeControl</RootNamespace>
+
+		<!-- Compiler -->
+		<LangVersion>latest</LangVersion>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>disable</ImplicitUsings>
+		<EnableNETAnalyzers>true</EnableNETAnalyzers>
+		<EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+
+		<!-- Versioning -->
+		<Version>0.5.1</Version>
+		<AssemblyVersion>0.5.1.0</AssemblyVersion>
+		<FileVersion>$(Version)</FileVersion>
+
+		<!-- Timestamp-based build identifier -->
+		<BuildNumber>$([System.DateTime]::Now.ToString('yyyyMMddHHmm'))</BuildNumber>
+		<InformationalVersion>$(Version)+$(BuildNumber)</InformationalVersion>
+		<IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+
+		<!-- Release debugging symbols -->
+		<DebugType Condition="'$(Configuration)' == 'Release'">portable</DebugType>
+
+		<!-- Paradox Mods configuration -->
+		<PublishConfigurationPath>$(MSBuildProjectDirectory)\Properties\PublishConfiguration.xml</PublishConfigurationPath>
+		<PdxDirectory>$(MSBuildProjectDirectory)\..\pdx</PdxDirectory>
+	</PropertyGroup>
+
+
+	<!-- ============================================================
+         CITIES: SKYLINES II SDK
+         ============================================================ -->
+
+	<PropertyGroup>
+		<CSII_TOOLPATH>$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))</CSII_TOOLPATH>
+	</PropertyGroup>
+
+	<Import
+        Project="$(CSII_TOOLPATH)\Mod.props"
+        Condition="'$(OS)' == 'Windows_NT' and Exists('$(CSII_TOOLPATH)\Mod.props')" />
+
+	<Import
+        Project="$(CSII_TOOLPATH)\Mod.targets"
+        Condition="'$(OS)' == 'Windows_NT' and Exists('$(CSII_TOOLPATH)\Mod.targets')" />
+
+	<Target Name="ValidateCSIIEnvironment"
+            BeforeTargets="PrepareForBuild"
+            Condition="'$(OS)' == 'Windows_NT'">
+
+		<Error
+            Condition="'$(CSII_TOOLPATH)' == ''"
+            Text="CSII_TOOLPATH environment variable is not set." />
+
+		<Error
+            Condition="!Exists('$(CSII_TOOLPATH)\Mod.props')"
+            Text="CSII Mod.props not found. Check CSII_TOOLPATH." />
+
+		<Error
+            Condition="!Exists('$(CSII_TOOLPATH)\Mod.targets')"
+            Text="CSII Mod.targets not found. Check CSII_TOOLPATH." />
+	</Target>
+
+
+	<!-- ============================================================
+         GAME AND UNITY REFERENCES
+         ============================================================ -->
 
 	<ItemGroup>
-		<!-- Unity Engine References -->
+		<!-- Unity Engine -->
 		<Reference Include="UnityEngine.CoreModule">
 			<HintPath>$(MANAGED_DLLS_PATH)\UnityEngine.CoreModule.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
+
 		<Reference Include="Unity.Entities">
 			<HintPath>$(MANAGED_DLLS_PATH)\Unity.Entities.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
+
 		<Reference Include="Unity.Collections">
 			<HintPath>$(MANAGED_DLLS_PATH)\Unity.Collections.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
+
 		<Reference Include="Unity.Mathematics">
 			<HintPath>$(MANAGED_DLLS_PATH)\Unity.Mathematics.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
+
 		<Reference Include="Unity.Burst">
 			<HintPath>$(MANAGED_DLLS_PATH)\Unity.Burst.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
+
 		<Reference Include="Newtonsoft.Json">
 			<HintPath>$(MANAGED_DLLS_PATH)\Newtonsoft.Json.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
 
-		<!-- Cities Skylines 2 Game References -->
+		<!-- Cities: Skylines II -->
 		<Reference Include="Game">
 			<HintPath>$(MANAGED_DLLS_PATH)\Game.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
+
 		<Reference Include="Colossal.Core">
 			<HintPath>$(MANAGED_DLLS_PATH)\Colossal.Core.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
+
 		<Reference Include="Colossal.Logging">
 			<HintPath>$(MANAGED_DLLS_PATH)\Colossal.Logging.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
+
 		<Reference Include="Colossal.Localization">
 			<HintPath>$(MANAGED_DLLS_PATH)\Colossal.Localization.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
+
 		<Reference Include="Colossal.IO.AssetDatabase">
 			<HintPath>$(MANAGED_DLLS_PATH)\Colossal.IO.AssetDatabase.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
+
 		<Reference Include="Colossal.UI">
 			<HintPath>$(MANAGED_DLLS_PATH)\Colossal.UI.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
+
 		<Reference Include="Colossal.UI.Binding">
 			<HintPath>$(MANAGED_DLLS_PATH)\Colossal.UI.Binding.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
+
 		<Reference Include="Colossal.AssetPipeline">
 			<HintPath>$(MANAGED_DLLS_PATH)\Colossal.AssetPipeline.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
+
 		<Reference Include="Colossal.Mathematics">
 			<HintPath>$(MANAGED_DLLS_PATH)\Colossal.Mathematics.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
-
 	</ItemGroup>
-	
+
+
+	<!-- ============================================================
+         PACKAGES
+         ============================================================ -->
+
 	<ItemGroup>
 		<PackageReference Include="JsonPoke" Version="1.2.0" />
 	</ItemGroup>
-	
+
+
+	<!-- ============================================================
+         RESOURCES AND CONTENT
+         ============================================================ -->
+
 	<ItemGroup>
-		<None Include="$(ModPropsFile)" Link="Properties\Mod.props" />
-		<None Remove="C:\Users\steal\AppData\LocalLow\Colossal Order\Cities Skylines II\.cache\Modding\Mod.props" />
-		<None Remove="C:\Users\steal\AppData\LocalLow\Colossal Order\Cities Skylines II\.cache\Modding\Mod.targets" />	
-		<None Include="$(ModTargetsFile)" Link="Properties\Mod.targets" />
+		<!-- Embedded game data -->
+		<EmbeddedResource Include="parking-data.json" />
+
+		<!-- Localization files -->
+		<None Update="Locale\*.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+
+		<!-- CSII SDK configuration files -->
+		<None Include="$(ModPropsFile)"
+              Link="Properties\Mod.props"
+              Condition="'$(ModPropsFile)' != ''" />
+
+		<None Include="$(ModTargetsFile)"
+              Link="Properties\Mod.targets"
+              Condition="'$(ModTargetsFile)' != ''" />
 	</ItemGroup>
 
-	<!--ui-related commands-->
-	<Target Name="BuildUIAll" AfterTargets="AfterBuild"  Condition=" '$(OS)' == 'Windows_NT' ">
-		<CallTarget Targets="BuildUI" />
-	</Target>
-	<Target Name="BuildUI">
-		<Exec Command="npm run build" WorkingDirectory="$(ProjectDir)\ui" />
-	</Target>
-	<Target Name="CopyUIFiles" AfterTargets="BuildUI">
-		<ItemGroup>
-			<UIFiles Include="$(ProjectDir)\ui\output\*.*" />
-		</ItemGroup>
-		<Copy SourceFiles="@(UIFiles)" DestinationFiles="@(UIFiles->'$(DeployDir)\%(RecursiveDir)%(Filename)%(Extension)')" />
-	</Target>
-	
-	<Target Name="CleanUIOutput" BeforeTargets="Clean">
-		<RemoveDir Directories="$(ProjectDir)\ui\output" />
+
+	<!-- ============================================================
+         FRONTEND CONFIGURATION
+         ============================================================ -->
+
+	<PropertyGroup>
+		<UIRoot>$(MSBuildProjectDirectory)\ui</UIRoot>
+		<UIOutput>$(UIRoot)\output</UIOutput>
+		<UIBuildStamp>$(UIOutput)\.build-stamp</UIBuildStamp>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- Frontend sources -->
+		<UIInputs Include="$(UIRoot)\src\**\*.*" />
+
+		<!-- Frontend configuration -->
+		<UIInputs Include="$(UIRoot)\package.json" />
+		<UIInputs Include="$(UIRoot)\package-lock.json" />
+		<UIInputs Include="$(UIRoot)\mod.json" />
+
+		<UIInputs Include="$(UIRoot)\tsconfig.json"
+                  Condition="Exists('$(UIRoot)\tsconfig.json')" />
+	</ItemGroup>
+
+
+	<!-- ============================================================
+         FRONTEND BUILD PIPELINE
+         ============================================================ -->
+
+	<!-- Install dependencies when node_modules is missing -->
+	<Target Name="RestoreUI"
+            Condition="'$(OS)' == 'Windows_NT'
+                       and '$(NeedBuild)' == 'true'
+                       and !Exists('$(UIRoot)\node_modules')">
+
+		<Message Importance="high"
+                 Text="Restoring frontend dependencies..." />
+
+		<Exec Command="npm ci"
+              WorkingDirectory="$(UIRoot)" />
+
+		<!-- Force UI rebuild after dependency restoration -->
+		<Delete Files="$(UIBuildStamp)" />
 	</Target>
 
-	<!--other files manipulation-->
-	<Target Name="SetupAttributes" BeforeTargets="BeforeBuild" Condition="'$(Configuration)' == 'Debug'">
-		<XmlPoke XmlInputPath="$(PublishConfigurationPath)" Value="$([System.IO.File]::ReadAllText(../pdx/ABOUT.md))" Query="//LongDescription" />
-		<XmlPoke XmlInputPath="$(PublishConfigurationPath)" Value="$([System.IO.File]::ReadAllText(../pdx/CHANGELOG.md))" Query="//ChangeLog" />
-		<XmlPoke XmlInputPath="$(PublishConfigurationPath)" Value="$(AssemblyVersion)" Query="//ModVersion/@Value" />
-		<JsonPoke ContentPath="$(ProjectDir)ui\mod.json" Query="$.version" Value="$(AssemblyVersion)" />
+
+	<!-- Build frontend before CSII deployment -->
+	<Target Name="BuildUI"
+            BeforeTargets="DeployWIP"
+            DependsOnTargets="RestoreUI"
+            Inputs="@(UIInputs)"
+            Outputs="$(UIBuildStamp)"
+            Condition="'$(OS)' == 'Windows_NT'
+                       and '$(NeedBuild)' == 'true'">
+
+		<Message Importance="high"
+                 Text="Building Parking Fee Control UI..." />
+
+		<Exec Command="npm run build"
+              WorkingDirectory="$(UIRoot)" />
+
+		<Touch Files="$(UIBuildStamp)"
+               AlwaysCreate="true" />
+	</Target>
+
+
+	<!-- Copy frontend after CSII deployment -->
+	<Target Name="CopyUIFiles"
+            AfterTargets="DeployWIP"
+            Condition="'$(OS)' == 'Windows_NT'
+                       and '$(NeedBuild)' == 'true'
+                       and '$(DeployDir)' != ''
+                       and Exists('$(UIOutput)')">
+
+		<ItemGroup>
+			<UIFiles Include="$(UIOutput)\**\*.*"
+                     Exclude="$(UIBuildStamp)" />
+		</ItemGroup>
+
+		<Message Importance="high"
+                 Text="Deploying frontend assets to $(DeployDir)" />
+
+		<Copy
+            SourceFiles="@(UIFiles)"
+            DestinationFiles="@(UIFiles->'$(DeployDir)\%(RecursiveDir)%(Filename)%(Extension)')"
+            SkipUnchangedFiles="true"
+            Condition="'@(UIFiles)' != ''" />
+	</Target>
+
+
+	<!-- Clean generated frontend files -->
+	<Target Name="CleanUIOutput"
+            BeforeTargets="Clean"
+            Condition="Exists('$(UIOutput)')">
+
+		<RemoveDir Directories="$(UIOutput)" />
+	</Target>
+
+
+	<!-- ============================================================
+         VERSION SYNCHRONIZATION
+         ============================================================ -->
+
+	<!-- Synchronize the public version with frontend metadata -->
+	<Target Name="SetupVersion"
+            BeforeTargets="BeforeBuild"
+            Condition="Exists('$(UIRoot)\mod.json')">
+
+		<JsonPoke
+            ContentPath="$(UIRoot)\mod.json"
+            Query="$.version"
+            Value="$(Version)" />
+	</Target>
+
+
+	<!-- ============================================================
+         PARADOX MODS PUBLISHING METADATA
+         ============================================================ -->
+
+	<!-- Prepare metadata for release builds -->
+	<Target Name="SetupAttributes"
+            BeforeTargets="BeforeBuild"
+            Condition="'$(Configuration)' == 'Release'">
+
+		<XmlPoke
+            XmlInputPath="$(PublishConfigurationPath)"
+            Query="//LongDescription"
+            Value="$([System.IO.File]::ReadAllText('$(PdxDirectory)\ABOUT.md'))"
+            Condition="Exists('$(PdxDirectory)\ABOUT.md')" />
+
+		<XmlPoke
+            XmlInputPath="$(PublishConfigurationPath)"
+            Query="//ChangeLog"
+            Value="$([System.IO.File]::ReadAllText('$(PdxDirectory)\CHANGELOG.md'))"
+            Condition="Exists('$(PdxDirectory)\CHANGELOG.md')" />
+
+		<XmlPoke
+            XmlInputPath="$(PublishConfigurationPath)"
+            Query="//ModVersion/@Value"
+            Value="$(Version)" />
 	</Target>
 
 </Project>

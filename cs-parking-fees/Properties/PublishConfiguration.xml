@@ -81,15 +81,17 @@ Project GitHub: https://github.com/thiago-rcarvalho/cs2-parking-fee-control
   <!--Version of the mod-->
   <ModVersion Value="0.5.0" />
   <!--Recommended version of the base game to use the mod-->
-  <GameVersion Value="1.5.*" />
+  <GameVersion Value="1.6.1" />
   <!--Dependency for the mod, can be set multiple times-->
   <Dependency Id="" />
   <!--Change log for new version. Single line or multi line. Supports minimal markdown subset-->
   <!--<ChangeLog Value="" />-->
-  <ChangeLog>- Added support to Simplified Chinese, thanks to @AriadusTT</ChangeLog>
+	<ChangeLog>
+		- Made compatibility fixes for Cities: Skylines II version 1.6.1
+	</ChangeLog>
   <!--External link. supported types are discord, github, youtube, twitch, x, paypal, patreon, buymeacoffee, kofi, crowdin, gitlab-->
-  <ExternalLink Type="github" Url="https://github.com/thiago-rcarvalho/cs2-parking-fee-control" />
-  <ExternalLink Type="kofi" Url="https://ko-fi.com/stealthcold" />
+  <ExternalLink Type="github" Url="https://github.com/kpgocek/parking-fee-control" />
+  <ExternalLink Type="kofi" Url="https://ko-fi.com/kpgocek" />	
   <!-- Supported values Public, Private, Unlisted -->
   <AccessLevel Value="Public" />
 </Publish>

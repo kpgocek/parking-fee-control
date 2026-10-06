@@ -14,12 +14,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Collections.Generic;
 using Newtonsoft.Json;
-using Colossal.IO.AssetDatabase;
-using Unity.Entities;
 
 namespace ParkingFeeControl
 {
@@ -33,26 +31,54 @@ namespace ParkingFeeControl
         public class PrefabEntry
         {
             [JsonProperty("name")]
-            public string Name { get; set; }
+            public string Name
+            {
+                get; set;
+            }
 
             // Optional override fee for this prefab
             [JsonProperty("fee")]
-            public int? Fee { get; set; }
+            public int? Fee
+            {
+                get; set;
+            }
+
+            public PrefabEntry(string name, int? fee = null)
+            {
+                Name = name;
+                Fee = fee;
+            }
         }
 
         public class Category
         {
             [JsonProperty("type")]
-            public string Type { get; set; }
+            public string Type
+            {
+                get; set;
+            }
 
             [JsonProperty("icon")]
-            public string Icon { get; set; } = string.Empty;
+            public string? Icon
+            {
+                get; set;
+            }
 
             [JsonProperty("defaultFee")]
-            public int DefaultFee { get; set; }
+            public int DefaultFee
+            {
+                get; set;
+            }
 
             [JsonProperty("prefabs")]
             public List<PrefabEntry> Prefabs { get; set; } = new List<PrefabEntry>();
+
+            public Category(string type, int defaultFee, string? icon = null)
+            {
+                Type = type;
+                DefaultFee = defaultFee;
+                Icon = icon;
+            }
         }
 
         [JsonProperty("categories")]
@@ -67,60 +93,51 @@ namespace ParkingFeeControl
             {
                 Categories = new List<Category>
                 {
-                    new Category
-                    {
-                        Type = "car",
-                        DefaultFee = 10,
-                        Prefabs = new List<PrefabEntry>
+                    new("car", 10) {
+                        Prefabs = new()
                         {
-                            new PrefabEntry { Name = "AutomatedParkingBuilding01" },
-                            new PrefabEntry { Name = "ParkingHall01" },
-                            new PrefabEntry { Name = "ParkingHall02" },
-                            new PrefabEntry { Name = "ParkingHall03" },
-                            new PrefabEntry { Name = "ParkingHall04" },
-                            new PrefabEntry { Name = "ParkingLot01" },
-                            new PrefabEntry { Name = "ParkingLot02" },
-                            new PrefabEntry { Name = "ParkingLot03" },
-                            new PrefabEntry { Name = "ParkingLot04" },
-                            new PrefabEntry { Name = "ParkingLot06" },
-                            new PrefabEntry { Name = "ParkingLot07" },
-                            new PrefabEntry { Name = "ParkingLot08" },
-                            new PrefabEntry { Name = "ParkingLot09" },
-                            new PrefabEntry { Name = "ParkingLot10" },
-                            new PrefabEntry { Name = "ParkingLot11" },
-                            new PrefabEntry { Name = "ParkingLot12" },
-                            new PrefabEntry { Name = "ParkingLot13" },
-                            new PrefabEntry { Name = "ParkingLot14" },
-                            new PrefabEntry { Name = "ParkingLot15" },
-                            new PrefabEntry { Name = "ParkingLot16" },
-                            new PrefabEntry { Name = "ParkingLot17" }
-                        }
+                            new("AutomatedParkingBuilding01"),
+                            new("ParkingHall01"),
+                            new("ParkingHall02"),
+                            new("ParkingHall03"),
+                            new("ParkingHall04"),
+                            new("ParkingLot01"),
+                            new("ParkingLot02"),
+                            new("ParkingLot03"),
+                            new("ParkingLot04"),
+                            new("ParkingLot06"),
+                            new("ParkingLot07"),
+                            new("ParkingLot08"),
+                            new("ParkingLot09"),
+                            new("ParkingLot10"),
+                            new("ParkingLot11"),
+                            new("ParkingLot12"),
+                            new("ParkingLot13"),
+                            new("ParkingLot14"),
+                            new("ParkingLot15"),
+                            new("ParkingLot16"),
+                            new("ParkingLot17"),
+                        },
                     },
-                    new Category
-                    {
-                        Type = "bicycle",
-                        DefaultFee = 0,
-                        Prefabs = new List<PrefabEntry>
+                    new("bicycle", 0) {
+                        Prefabs = new()
                         {
-                            new PrefabEntry { Name = "BicycleParkingArea01" },
-                            new PrefabEntry { Name = "BicycleParkingArea02" },
-                            new PrefabEntry { Name = "BicycleParkingArea03" },
-                            new PrefabEntry { Name = "BicycleParkingHall01" },
-                            new PrefabEntry { Name = "BicycleParkingHall02" },
-                            new PrefabEntry { Name = "BicycleParkingHall03" },
-                            new PrefabEntry { Name = "BicycleStorage01" },
-                            new PrefabEntry { Name = "BicycleStorage02" },
-                            new PrefabEntry { Name = "BicycleStorage03" }
-                        }
+                            new("BicycleParkingArea01") { Name = "BicycleParkingArea01" },
+                            new("BicycleParkingArea02") { Name = "BicycleParkingArea02" },
+                            new("BicycleParkingArea03") { Name = "BicycleParkingArea03" },
+                            new("BicycleParkingHall01") { Name = "BicycleParkingHall01" },
+                            new("BicycleParkingHall02") { Name = "BicycleParkingHall02" },
+                            new("BicycleParkingHall03") { Name = "BicycleParkingHall03" },
+                            new("BicycleStorage01") { Name = "BicycleStorage01" },
+                            new("BicycleStorage02") { Name = "BicycleStorage02" },
+                            new("BicycleStorage03") { Name = "BicycleStorage03" },
+                        },
                     },
-                    new Category
-                    {
-                        Type = "motorcycle",
-                        DefaultFee = 10,
-                        Prefabs = new List<PrefabEntry>
+                    new("motorcycle", 10) {
+                        Prefabs = new()
                         {
-                            new PrefabEntry { Name = "ParkingLot05" }
-                        }
+                            new("ParkingLot05"),
+                        },
                     }
                 }
             };
@@ -134,10 +151,10 @@ namespace ParkingFeeControl
         {
             try
             {
-                string configPath = System.IO.Path.Combine(Mod.ModPath, "parking-config.json");
+                var configPath = Path.Combine(Mod.ModPath, "parking-config.json");
                 if (File.Exists(configPath))
                 {
-                    string json = File.ReadAllText(configPath);
+                    var json = File.ReadAllText(configPath);
                     var config = JsonConvert.DeserializeObject<ParkingFeeConfig>(json);
                     if (config != null)
                     {
@@ -170,17 +187,11 @@ namespace ParkingFeeControl
                         defaultConfig = new ParkingFeeConfig();
                         foreach (var cat in parkingData.Categories)
                         {
-                            var newCat = new Category
-                            {
-                                Type = cat.Type,
-                                DefaultFee = cat.DefaultFee,
-                                Icon = cat.Icon,
-                                Prefabs = new List<PrefabEntry>()
-                            };
+                            var newCat = new Category(cat.Type, cat.DefaultFee, cat.Icon);
 
                             foreach (var prefab in cat.Prefabs)
                             {
-                                newCat.Prefabs.Add(new PrefabEntry { Name = prefab.Name });
+                                newCat.Prefabs.Add(new PrefabEntry(prefab.Name));
                             }
 
                             defaultConfig.Categories.Add(newCat);
@@ -213,8 +224,8 @@ namespace ParkingFeeControl
         {
             try
             {
-                string configPath = System.IO.Path.Combine(Mod.ModPath, "parking-config.json");
-                string json = JsonConvert.SerializeObject(this, Formatting.Indented);
+                var configPath = Path.Combine(Mod.ModPath, "parking-config.json");
+                var json = JsonConvert.SerializeObject(this, Formatting.Indented);
                 File.WriteAllText(configPath, json);
             }
             catch (Exception ex)
@@ -229,14 +240,16 @@ namespace ParkingFeeControl
         public void LogSettings()
         {
             if (Mod.Settings?.DebugLogging != true)
+            {
                 return;
+            }
 
             ModLogger.Debug("Configuration settings:");
             LogGeneralSettings();
             LogFeeSettings();
         }
 
-        private void LogGeneralSettings()
+        private static void LogGeneralSettings()
         {
             try
             {
@@ -281,7 +294,9 @@ namespace ParkingFeeControl
         public int GetParkingFeeForPrefab(string prefabName)
         {
             if (string.IsNullOrEmpty(prefabName))
+            {
                 return 10; // fallback default
+            }
 
             foreach (var cat in Categories)
             {
@@ -289,9 +304,7 @@ namespace ParkingFeeControl
                 var match = cat.Prefabs.FirstOrDefault(p => string.Equals(p.Name, prefabName, StringComparison.OrdinalIgnoreCase));
                 if (match != null)
                 {
-                    if (match.Fee.HasValue)
-                        return match.Fee.Value;
-                    return cat.DefaultFee;
+                    return match.Fee ?? cat.DefaultFee;
                 }
             }
 
@@ -314,7 +327,7 @@ namespace ParkingFeeControl
         /// </summary>
         private static bool MergeWithParkingData(ParkingFeeConfig config, ParkingDataLoader.ParkingData parkingData)
         {
-            bool changed = false;
+            var changed = false;
 
             // Build lookup for incoming data (case-insensitive)
             var dataCatsByType = parkingData.Categories
@@ -337,13 +350,11 @@ namespace ParkingFeeControl
                 if (existingCat == null)
                 {
                     // New category -> add with prefabs (no fees)
-                    var newCat = new Category
+                    var newCat = new Category(dataCat.Type, dataCat.DefaultFee, dataCat.Icon)
                     {
-                        Type = dataCat.Type,
-                        DefaultFee = dataCat.DefaultFee,
-                        Icon = dataCat.Icon,
-                        Prefabs = dataCat.Prefabs.Select(p => new PrefabEntry { Name = p.Name }).ToList()
+                        Prefabs = dataCat.Prefabs.Select(p => new PrefabEntry(p.Name)).ToList()
                     };
+
                     config.Categories.Add(newCat);
                     changed = true;
                     continue;
@@ -360,7 +371,7 @@ namespace ParkingFeeControl
                 if (!string.Equals(existingCat.Type, DistrictsCategoryType, StringComparison.OrdinalIgnoreCase))
                 {
                     // Build set of allowed prefabs for this category (already filtered by installed mods)
-                    var allowedPrefabs = new HashSet<string>(dataCat.PrefabNames, StringComparer.OrdinalIgnoreCase);
+                    HashSet<string> allowedPrefabs = new(dataCat.PrefabNames, StringComparer.OrdinalIgnoreCase);
 
                     // Remove prefabs that authors removed from parking-data (even if user changed fee)
                     var prefabsToRemove = existingCat.Prefabs.Where(p => !allowedPrefabs.Contains(p.Name)).ToList();
@@ -375,7 +386,7 @@ namespace ParkingFeeControl
                     {
                         if (!existingCat.Prefabs.Any(p => string.Equals(p.Name, prefab.Name, StringComparison.OrdinalIgnoreCase)))
                         {
-                            existingCat.Prefabs.Add(new PrefabEntry { Name = prefab.Name });
+                            existingCat.Prefabs.Add(new PrefabEntry(prefab.Name));
                             changed = true;
                         }
                     }

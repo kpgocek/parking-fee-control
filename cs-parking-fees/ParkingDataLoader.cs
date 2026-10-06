@@ -18,8 +18,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Colossal.IO.AssetDatabase;
-using Colossal.Json;
-using Game.SceneFlow;
 using Newtonsoft.Json;
 
 namespace ParkingFeeControl
@@ -96,17 +94,17 @@ namespace ParkingFeeControl
                 if (assetDatabase != null)
                 {
                     var prefabAssets = assetDatabase.GetAssets<PrefabAsset>(new SearchFilter<PrefabAsset>());
-                    
+
                     foreach (var asset in prefabAssets)
                     {
                         try
                         {
                             var meta = asset.GetMeta();
                             var platformId = meta.platformID;
-                            
+
                             // Only add if platformID is valid (>0)
                             // platformID = 0 means vanilla assets or local/dev mods
-                            if (platformId > 0)
+                            if (ulong.TryParse(platformId, out var id) && id > 0)
                             {
                                 installedModIds.Add(platformId.ToString());
                             }
@@ -134,8 +132,8 @@ namespace ParkingFeeControl
         private static void FilterPrefabsByInstalledMods(ParkingData data, bool showLog = false)
         {
             var installedMods = GetInstalledMods();
-            int totalPrefabs = 0;
-            int filteredPrefabs = 0;
+            var totalPrefabs = 0;
+            var filteredPrefabs = 0;
 
             foreach (var category in data.Categories)
             {
@@ -148,8 +146,14 @@ namespace ParkingFeeControl
                     if (string.IsNullOrEmpty(prefab.ModId))
                         return true;
 
+                    if (prefab.ModId is null)
+                    {
+                        ModLogger.Debug($"Filtering out prefab '{prefab.Name}' - modId is null");
+                        return false;
+                    }
+
                     // Check if required mod is installed (O(1) lookup)
-                    bool isInstalled = installedMods.Contains(prefab.ModId);
+                    var isInstalled = installedMods.Contains(prefab.ModId);
 
                     if (!isInstalled)
                     {

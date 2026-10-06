@@ -13,20 +13,17 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-using Colossal.UI.Binding;
-using Game.UI;
-using Game.UI.InGame;
 using System;
 using System.Collections.Generic;
-using Newtonsoft.Json;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using Colossal.UI.Binding;
+using Game.Areas;
 using Game.Prefabs;
 using Game.SceneFlow;
-using Game.Areas;
-using Game.Common;
+using Game.UI;
+using Game.UI.InGame;
 using Unity.Collections;
 using Unity.Entities;
 
@@ -34,14 +31,14 @@ namespace ParkingFeeControl.UI
 {
     public class ParkingFeeUIData : IJsonWritable
     {
-        public List<CategoryData> categories { get; set; } = new List<CategoryData>();
+        public List<CategoryData> Categories { get; set; } = new List<CategoryData>();
 
         public void Write(IJsonWriter writer)
         {
             writer.TypeBegin(GetType().FullName);
             writer.PropertyName("categories");
-            writer.ArrayBegin(categories.Count);
-            foreach (var category in categories)
+            writer.ArrayBegin(Categories.Count);
+            foreach (var category in Categories)
             {
                 category.Write(writer);
             }
@@ -51,23 +48,26 @@ namespace ParkingFeeControl.UI
 
         public class CategoryData : IJsonWritable
         {
-            public string type { get; set; } = string.Empty;
-            public string icon { get; set; } = string.Empty;
-            public float defaultFee { get; set; }
-            public List<PrefabData> prefabs { get; set; } = new List<PrefabData>();
+            public string Type { get; set; } = string.Empty;
+            public string Icon { get; set; } = string.Empty;
+            public float DefaultFee
+            {
+                get; set;
+            }
+            public List<PrefabData> Prefabs { get; set; } = new List<PrefabData>();
 
             public void Write(IJsonWriter writer)
             {
                 writer.TypeBegin(GetType().FullName);
                 writer.PropertyName("type");
-                writer.Write(type);
+                writer.Write(Type);
                 writer.PropertyName("icon");
-                writer.Write(icon);
+                writer.Write(Icon);
                 writer.PropertyName("defaultFee");
-                writer.Write(defaultFee);
+                writer.Write(DefaultFee);
                 writer.PropertyName("prefabs");
-                writer.ArrayBegin(prefabs.Count);
-                foreach (var prefab in prefabs)
+                writer.ArrayBegin(Prefabs.Count);
+                foreach (var prefab in Prefabs)
                 {
                     prefab.Write(writer);
                 }
@@ -78,22 +78,25 @@ namespace ParkingFeeControl.UI
 
         public class PrefabData : IJsonWritable
         {
-            public string name { get; set; } = string.Empty;
-            public string displayName { get; set; } = string.Empty;
-            public string thumbnail { get; set; } = string.Empty;
-            public float fee { get; set; }
+            public string Name { get; set; } = string.Empty;
+            public string DisplayName { get; set; } = string.Empty;
+            public string Thumbnail { get; set; } = string.Empty;
+            public float Fee
+            {
+                get; set;
+            }
 
             public void Write(IJsonWriter writer)
             {
                 writer.TypeBegin(GetType().FullName);
                 writer.PropertyName("name");
-                writer.Write(name);
+                writer.Write(Name);
                 writer.PropertyName("displayName");
-                writer.Write(displayName);
+                writer.Write(DisplayName);
                 writer.PropertyName("thumbnail");
-                writer.Write(thumbnail);
+                writer.Write(Thumbnail);
                 writer.PropertyName("fee");
-                writer.Write(fee);
+                writer.Write(Fee);
                 writer.TypeEnd();
             }
         }
@@ -106,11 +109,18 @@ namespace ParkingFeeControl.UI
 
         public void Read(IJsonReader reader)
         {
-            reader.ReadMapBegin();
-            reader.ReadProperty("categoryType");
-            reader.Read(out categoryType);
-            reader.ReadProperty("newFee");
-            reader.Read(out newFee);
+            _ = reader.ReadMapBegin();
+
+            if (reader.ReadProperty("categoryType"))
+            {
+                reader.Read(out categoryType);
+            }
+
+            if (reader.ReadProperty("newFee"))
+            {
+                reader.Read(out newFee);
+            }
+
             reader.ReadMapEnd();
         }
     }
@@ -123,13 +133,23 @@ namespace ParkingFeeControl.UI
 
         public void Read(IJsonReader reader)
         {
-            reader.ReadMapBegin();
-            reader.ReadProperty("categoryType");
-            reader.Read(out categoryType);
-            reader.ReadProperty("prefabName");
-            reader.Read(out prefabName);
-            reader.ReadProperty("newFee");
-            reader.Read(out newFee);
+            _ = reader.ReadMapBegin();
+
+            if (reader.ReadProperty("categoryType"))
+            {
+                reader.Read(out categoryType);
+            }
+
+            if (reader.ReadProperty("prefabName"))
+            {
+                reader.Read(out prefabName);
+            }
+
+            if (reader.ReadProperty("newFee"))
+            {
+                reader.Read(out newFee);
+            }
+
             reader.ReadMapEnd();
         }
     }
@@ -139,26 +159,44 @@ namespace ParkingFeeControl.UI
         private const string DistrictPrefabIconPath = "Media/Game/Policies/PaidParking.svg";
         private const string DistrictEntityKeyPrefix = "district:";
 
-        private ValueBinding<ParkingFeeUIData> _configBinding;
-        private TriggerBinding<CategoryFeeUpdate> _updateCategoryFeeTrigger;
-        private TriggerBinding<PrefabFeeUpdate> _updatePrefabFeeTrigger;
-        private TriggerBinding _applyNowTrigger;
-        private TriggerBinding _refreshConfigTrigger;
+        private const string DefaultFallbackIcon = "Media/Game/Icons/Parking.svg";
 
-        private ParkingFeeUIData _currentConfig;
-        private PrefabSystem _prefabSystem;
-        private PrefabUISystem _prefabUISystem;
-        private ImageSystem _imageSystem;
-        private ParkingPolicyModifierSystem _policySystem;
-        private Dictionary<string, PrefabBase> _prefabByNameCache;
+        private ValueBinding<ParkingFeeUIData> ConfigBinding => _configBinding ?? throw new InvalidOperationException("ConfigBinding is not initialized");
+        private ValueBinding<ParkingFeeUIData>? _configBinding;
+
+        private TriggerBinding<CategoryFeeUpdate>? _updateCategoryFeeTrigger;
+        private TriggerBinding<PrefabFeeUpdate>? _updatePrefabFeeTrigger;
+        private TriggerBinding? _applyNowTrigger;
+        private TriggerBinding? _refreshConfigTrigger;
+
+        private ParkingFeeUIData CurrentConfig => _currentConfig ?? throw new InvalidOperationException("CurrentConfig is not initialized");
+        private ParkingFeeUIData? _currentConfig;
+
+        private PrefabSystem PrefabSystem => _prefabSystem ?? throw new InvalidOperationException("PrefabSystem not initialized");
+        private PrefabSystem? _prefabSystem;
+
+        private PrefabUISystem PrefabUISystem => _prefabUISystem ?? throw new InvalidOperationException("PrefabUISystem not initialized");
+        private PrefabUISystem? _prefabUISystem;
+
+        private ImageSystem ImageSystem => _imageSystem ?? throw new InvalidOperationException("ImageSystem not initialized");
+        private ImageSystem? _imageSystem;
+
+        private ParkingPolicyModifierSystem PolicySystem => _policySystem ?? throw new InvalidOperationException("ParkingPolicyModifierSystem not initialized");
+        private ParkingPolicyModifierSystem? _policySystem;
+
+        private Dictionary<string, PrefabBase> PrefabByNameCache => _prefabByNameCache ?? throw new InvalidOperationException("PrefabByNameCache not initialized");
+        private Dictionary<string, PrefabBase>? _prefabByNameCache;
+
         private EntityQuery _districtQuery;
-        private NameSystem _nameSystem;
+
+        private NameSystem NameSystem => _nameSystem ?? throw new InvalidOperationException("NameSystem not initialized");
+        private NameSystem? _nameSystem;
 
         /// <summary>
         /// Maps Entity.Index to Entity for district fee lookups within the current session.
         /// Rebuilt on each UI refresh. Not persisted — entity handles are session-stable.
         /// </summary>
-        private Dictionary<int, Entity> _districtEntityMap = new Dictionary<int, Entity>();
+        private readonly Dictionary<int, Entity> _districtEntityMap = new();
 
         protected override void OnCreate()
         {
@@ -179,7 +217,7 @@ namespace ParkingFeeControl.UI
             AddBinding(_configBinding = new ValueBinding<ParkingFeeUIData>(
                 "parkingfee",
                 "config",
-                _currentConfig
+                CurrentConfig
             ));
 
             AddBinding(_updateCategoryFeeTrigger = new TriggerBinding<CategoryFeeUpdate>(
@@ -216,32 +254,29 @@ namespace ParkingFeeControl.UI
             var config = Mod.Config;
             _currentConfig = new ParkingFeeUIData
             {
-                categories = config.Categories.Select(c => {
+                Categories = config.Categories.Select(c =>
+                {
                     List<ParkingFeeUIData.PrefabData> prefabList;
-                    
-                    if (string.Equals(c.Type, ParkingFeeConfig.DistrictsCategoryType, StringComparison.OrdinalIgnoreCase))
-                    {
-                        prefabList = BuildDistrictPrefabData(c);
-                    }
-                    else
-                    {
-                        prefabList = c.Prefabs.Select(p => new ParkingFeeUIData.PrefabData
-                        {
-                            name = p.Name,
-                            displayName = GetDisplayName(p.Name),
-                            thumbnail = GetThumbnail(p.Name),
-                            fee = p.Fee ?? c.DefaultFee
-                        }).ToList();
-                    }
 
-                    var sorted = prefabList.OrderBy(p => p.displayName ?? p.name, StringComparer.OrdinalIgnoreCase).ToList();
+                    prefabList =
+                        string.Equals(c.Type, ParkingFeeConfig.DistrictsCategoryType, StringComparison.OrdinalIgnoreCase)
+                        ? BuildDistrictPrefabData(c)
+                        : c.Prefabs.Select(p => new ParkingFeeUIData.PrefabData
+                        {
+                            Name = p.Name,
+                            DisplayName = GetDisplayName(p.Name),
+                            Thumbnail = GetThumbnail(p.Name),
+                            Fee = p.Fee ?? c.DefaultFee
+                        }).ToList();
+
+                    var sorted = prefabList.OrderBy(p => p.DisplayName ?? p.Name, StringComparer.OrdinalIgnoreCase).ToList();
 
                     return new ParkingFeeUIData.CategoryData
                     {
-                        type = c.Type,
-                        icon = c.Icon,
-                        defaultFee = c.DefaultFee,
-                        prefabs = sorted
+                        Type = c.Type,
+                        Icon = c.Icon ?? string.Empty,
+                        DefaultFee = c.DefaultFee,
+                        Prefabs = sorted
                     };
                 }).ToList()
             };
@@ -272,8 +307,8 @@ namespace ParkingFeeControl.UI
                     var displayName = GetDistrictDisplayName(district);
                     var entityKey = $"{DistrictEntityKeyPrefix}{district.Index}";
 
-                    bool hasComponent = EntityManager.HasComponent<DistrictParkingFee>(district);
-                    int fee = hasComponent
+                    var hasComponent = EntityManager.HasComponent<DistrictParkingFee>(district);
+                    var fee = hasComponent
                         ? EntityManager.GetComponentData<DistrictParkingFee>(district).m_Fee
                         : category.DefaultFee;
 
@@ -281,10 +316,10 @@ namespace ParkingFeeControl.UI
 
                     result.Add(new ParkingFeeUIData.PrefabData
                     {
-                        name = entityKey,
-                        displayName = displayName,
-                        thumbnail = DistrictPrefabIconPath,
-                        fee = fee
+                        Name = entityKey,
+                        DisplayName = displayName,
+                        Thumbnail = DistrictPrefabIconPath,
+                        Fee = fee
                     });
                 }
             }
@@ -334,7 +369,7 @@ namespace ParkingFeeControl.UI
         {
             try
             {
-                _policySystem?.ApplyNow(resetTimer: true);
+                PolicySystem.ApplyNow();
                 ModLogger.Debug("Apply now requested");
             }
             catch (Exception ex)
@@ -345,25 +380,25 @@ namespace ParkingFeeControl.UI
 
         private void NotifyConfigChanged()
         {
-            _currentConfig = CloneConfig(_currentConfig);
-            _configBinding.Update(_currentConfig);
+            _currentConfig = CloneConfig(CurrentConfig);
+            ConfigBinding.Update(CurrentConfig);
         }
 
         private static ParkingFeeUIData CloneConfig(ParkingFeeUIData source)
         {
             return new ParkingFeeUIData
             {
-                categories = source.categories.Select(c => new ParkingFeeUIData.CategoryData
+                Categories = source.Categories.Select(c => new ParkingFeeUIData.CategoryData
                 {
-                    type = c.type,
-                    icon = c.icon,
-                    defaultFee = c.defaultFee,
-                    prefabs = c.prefabs.Select(p => new ParkingFeeUIData.PrefabData
+                    Type = c.Type,
+                    Icon = c.Icon,
+                    DefaultFee = c.DefaultFee,
+                    Prefabs = c.Prefabs.Select(p => new ParkingFeeUIData.PrefabData
                     {
-                        name = p.name,
-                        displayName = p.displayName,
-                        thumbnail = p.thumbnail,
-                        fee = p.fee
+                        Name = p.Name,
+                        DisplayName = p.DisplayName,
+                        Thumbnail = p.Thumbnail,
+                        Fee = p.Fee
                     }).ToList()
                 }).ToList()
             };
@@ -371,23 +406,25 @@ namespace ParkingFeeControl.UI
 
         private void UpdateCategoryFee(CategoryFeeUpdate update)
         {
-            var category = _currentConfig.categories.FirstOrDefault(c => c.type == update.categoryType);
+            var category = CurrentConfig.Categories.FirstOrDefault(c => c.Type == update.categoryType);
             if (category == null)
+            {
                 return;
+            }
 
-            float oldDefaultFee = category.defaultFee;
+            var oldDefaultFee = category.DefaultFee;
 
             // Update category default fee
-            category.defaultFee = (float)Math.Round(update.newFee);
+            category.DefaultFee = (float)Math.Round(update.newFee);
 
             // Update all prefabs in this category maintaining the difference from category
-            foreach (var prefab in category.prefabs)
+            foreach (var prefab in category.Prefabs)
             {
-                float difference = oldDefaultFee - prefab.fee;
-                float newFee = update.newFee - difference;
+                var difference = oldDefaultFee - prefab.Fee;
+                var newFee = update.newFee - difference;
                 // Clamp between 0 and 50
                 newFee = Math.Max(0, Math.Min(50, newFee));
-                prefab.fee = (float)Math.Round(newFee);
+                prefab.Fee = (float)Math.Round(newFee);
             }
 
             NotifyConfigChanged();
@@ -395,11 +432,11 @@ namespace ParkingFeeControl.UI
             // Districts: persist fees to ECS components on the entity (saved with the game)
             if (IsDistrictsCategory(update.categoryType))
             {
-                foreach (var prefab in category.prefabs)
+                foreach (var prefab in category.Prefabs)
                 {
-                    if (TryParseDistrictEntityIndex(prefab.name, out int entityIndex))
+                    if (TryParseDistrictEntityIndex(prefab.Name, out var entityIndex))
                     {
-                        SetDistrictFee(entityIndex, (int)Math.Round(prefab.fee));
+                        SetDistrictFee(entityIndex, (int)Math.Round(prefab.Fee));
                     }
                 }
 
@@ -425,8 +462,8 @@ namespace ParkingFeeControl.UI
                 {
                     if (modPrefab.Fee.HasValue)
                     {
-                        float difference = oldDefaultFee - modPrefab.Fee.Value;
-                        float newFee = update.newFee - difference;
+                        var difference = oldDefaultFee - modPrefab.Fee.Value;
+                        var newFee = update.newFee - difference;
                         // Clamp between 0 and 50
                         newFee = Math.Max(0, Math.Min(50, newFee));
                         modPrefab.Fee = (int)Math.Round(newFee);
@@ -440,21 +477,25 @@ namespace ParkingFeeControl.UI
 
         private void UpdatePrefabFee(PrefabFeeUpdate update)
         {
-            var category = _currentConfig.categories.FirstOrDefault(c => c.type == update.categoryType);
+            var category = CurrentConfig.Categories.FirstOrDefault(c => c.Type == update.categoryType);
             if (category == null)
+            {
                 return;
+            }
 
-            var prefab = category.prefabs.FirstOrDefault(p => p.name == update.prefabName);
+            var prefab = category.Prefabs.FirstOrDefault(p => p.Name == update.prefabName);
             if (prefab == null)
+            {
                 return;
+            }
 
-            prefab.fee = (float)Math.Round(update.newFee);
+            prefab.Fee = (float)Math.Round(update.newFee);
             NotifyConfigChanged();
 
             // Districts: persist fee to ECS component on the entity (saved with the game)
             if (IsDistrictsCategory(update.categoryType))
             {
-                if (TryParseDistrictEntityIndex(update.prefabName, out int entityIndex))
+                if (TryParseDistrictEntityIndex(update.prefabName, out var entityIndex))
                 {
                     SetDistrictFee(entityIndex, (int)Math.Round(update.newFee));
                 }
@@ -501,12 +542,12 @@ namespace ParkingFeeControl.UI
             return localizedTitle ?? ToFriendlyName(prefabBase.name);
         }
 
-        private string TryGetLocalizedTitle(PrefabBase prefabBase)
+        private string? TryGetLocalizedTitle(PrefabBase prefabBase)
         {
             try
             {
-                var entity = _prefabSystem.GetEntity(prefabBase);
-                _prefabUISystem.GetTitleAndDescription(entity, out var titleId, out _);
+                var entity = PrefabSystem.GetEntity(prefabBase);
+                PrefabUISystem.GetTitleAndDescription(entity, out var titleId, out _);
 
                 var dictionary = GameManager.instance.localizationManager.activeDictionary;
                 return dictionary.TryGetValue(titleId, out var title) && !string.IsNullOrWhiteSpace(title)
@@ -528,18 +569,16 @@ namespace ParkingFeeControl.UI
         /// <returns>The thumbnail image path, or the default fallback icon if not found</returns>
         private string GetThumbnail(string prefabName)
         {
-            var defaultIcon = GetDefaultFallbackIcon();
 
             var prefabBase = SafeResolvePrefab(prefabName);
-            if (prefabBase == null)
-            {
-                return defaultIcon;
-            }
 
-            return TryGetPrefabThumbnail(prefabBase) ?? TryGetPrefabGroupIcon(prefabBase) ?? defaultIcon;
+            return
+                prefabBase == null
+                ? DefaultFallbackIcon
+                : TryGetPrefabThumbnail(prefabBase) ?? TryGetPrefabGroupIcon(prefabBase) ?? DefaultFallbackIcon;
         }
 
-        private string TryGetPrefabThumbnail(PrefabBase prefabBase)
+        private static string? TryGetPrefabThumbnail(PrefabBase prefabBase)
         {
             try
             {
@@ -553,7 +592,7 @@ namespace ParkingFeeControl.UI
             }
         }
 
-        private string TryGetPrefabGroupIcon(PrefabBase prefabBase)
+        private string? TryGetPrefabGroupIcon(PrefabBase prefabBase)
         {
             if (_imageSystem == null)
             {
@@ -562,8 +601,8 @@ namespace ParkingFeeControl.UI
 
             try
             {
-                var entity = _prefabSystem.GetEntity(prefabBase);
-                var groupIcon = _imageSystem.GetGroupIcon(entity);
+                var entity = PrefabSystem.GetEntity(prefabBase);
+                var groupIcon = ImageSystem.GetGroupIcon(entity);
                 return !string.IsNullOrEmpty(groupIcon) ? groupIcon : null;
             }
             catch (Exception ex)
@@ -573,7 +612,7 @@ namespace ParkingFeeControl.UI
             }
         }
 
-        private PrefabBase SafeResolvePrefab(string prefabName)
+        private PrefabBase? SafeResolvePrefab(string prefabName)
         {
             try
             {
@@ -586,17 +625,10 @@ namespace ParkingFeeControl.UI
             }
         }
 
-        private static string GetDefaultFallbackIcon()
-        {
-            return "Media/Game/Icons/Parking.svg";
-        }
 
-        private static bool IsPlaceholderThumbnail(string value)
-        {
-            return string.Equals(value, "Media/Placeholder.svg", StringComparison.OrdinalIgnoreCase);
-        }
+        private static bool IsPlaceholderThumbnail(string value) => string.Equals(value, "Media/Placeholder.svg", StringComparison.OrdinalIgnoreCase);
 
-        private PrefabBase TryResolvePrefabByName(string prefabName)
+        private PrefabBase? TryResolvePrefabByName(string prefabName)
         {
             if (string.IsNullOrWhiteSpace(prefabName) || _prefabSystem == null)
             {
@@ -635,7 +667,7 @@ namespace ParkingFeeControl.UI
 
             try
             {
-                IEnumerable<PrefabBase> prefabs = null;
+                IEnumerable<PrefabBase>? prefabs = null;
 
                 var prefabsProperty = typeof(PrefabSystem).GetProperty("prefabs", BindingFlags.Instance | BindingFlags.NonPublic);
                 if (prefabsProperty?.GetValue(_prefabSystem) is IEnumerable<PrefabBase> propPrefabs)
@@ -663,9 +695,9 @@ namespace ParkingFeeControl.UI
                         continue;
                     }
 
-                    if (!_prefabByNameCache.ContainsKey(prefab.name))
+                    if (!PrefabByNameCache.TryAdd(prefab.name, prefab))
                     {
-                        _prefabByNameCache.Add(prefab.name, prefab);
+                        ModLogger.Debug($"Duplicate prefab name detected in cache: '{prefab.name}'");
                     }
                 }
             }
@@ -677,17 +709,16 @@ namespace ParkingFeeControl.UI
 
         // ── District ECS helpers ──────────────────────────────────────────────
 
-        private static bool IsDistrictsCategory(string categoryType)
-        {
-            return string.Equals(categoryType, ParkingFeeConfig.DistrictsCategoryType, StringComparison.OrdinalIgnoreCase);
-        }
+        private static bool IsDistrictsCategory(string categoryType) => string.Equals(categoryType, ParkingFeeConfig.DistrictsCategoryType, StringComparison.OrdinalIgnoreCase);
 
         private static bool TryParseDistrictEntityIndex(string key, out int entityIndex)
         {
             entityIndex = 0;
-            if (string.IsNullOrEmpty(key) || !key.StartsWith(DistrictEntityKeyPrefix, StringComparison.OrdinalIgnoreCase))
-                return false;
-            return int.TryParse(key.Substring(DistrictEntityKeyPrefix.Length), out entityIndex);
+
+            return
+                !string.IsNullOrEmpty(key)
+                && key.StartsWith(DistrictEntityKeyPrefix, StringComparison.OrdinalIgnoreCase)
+                && int.TryParse(key.AsSpan(DistrictEntityKeyPrefix.Length), out entityIndex);
         }
 
         /// <summary>
@@ -696,9 +727,11 @@ namespace ParkingFeeControl.UI
         private void SetDistrictFee(int entityIndex, int fee)
         {
             if (!_districtEntityMap.TryGetValue(entityIndex, out var entity))
+            {
                 return;
+            }
 
-            string districtName = GetDistrictDisplayName(entity);
+            var districtName = GetDistrictDisplayName(entity);
             var feeComponent = new DistrictParkingFee(fee);
             if (EntityManager.HasComponent<DistrictParkingFee>(entity))
             {
@@ -707,8 +740,15 @@ namespace ParkingFeeControl.UI
             }
             else
             {
-                EntityManager.AddComponentData(entity, feeComponent);
-                ModLogger.Debug($"  District '{districtName}' (#{entityIndex}): added component with fee ${fee}");
+                if (EntityManager.AddComponentData(entity, feeComponent))
+                {
+                    ModLogger.Debug($"  District '{districtName}' (#{entityIndex}): added component with fee ${fee}");
+                }
+                else
+                {
+
+                    ModLogger.Warn($"  District '{districtName}' (#{entityIndex}): failed to add DistrictParkingFee component");
+                }
             }
         }
 
@@ -722,15 +762,15 @@ namespace ParkingFeeControl.UI
             }
 
             var sb = new StringBuilder(prefabName.Length + 8);
-            char prev = '\0';
+            var prev = '\0';
 
             foreach (var ch in prefabName)
             {
-                if (ch == '_' || ch == '-')
+                if (ch is '_' or '-')
                 {
                     if (sb.Length > 0 && sb[sb.Length - 1] != ' ')
                     {
-                        sb.Append(' ');
+                        sb = sb.Append(' ');
                     }
                     prev = ch;
                     continue;
@@ -744,11 +784,11 @@ namespace ParkingFeeControl.UI
 
                     if (addSpace && sb[sb.Length - 1] != ' ')
                     {
-                        sb.Append(' ');
+                        sb = sb.Append(' ');
                     }
                 }
 
-                sb.Append(ch);
+                sb = sb.Append(ch);
                 prev = ch;
             }
 
