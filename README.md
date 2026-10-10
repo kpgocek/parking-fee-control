@@ -15,7 +15,11 @@ Translations are stored in JSON files inside the `cs-parking-fees/Locale/` folde
 
 ### Supported Languages
 
-> <img src="https://purecatamphetamine.github.io/country-flag-icons/3x2/US.svg" width="20"/> en-US | <img src="https://purecatamphetamine.github.io/country-flag-icons/3x2/BR.svg" width="20"/> pt-BR | <img src="https://purecatamphetamine.github.io/country-flag-icons/3x2/DE.svg" width="20"/> de-DE (by @AndyStgt89) | <img src="https://purecatamphetamine.github.io/country-flag-icons/3x2/CN.svg" width="20"/> zh-HANS (by @AriadusTT)
+- [x] ![US](img/flags/US.svg) English (en-US) 
+- [x] ![BR](img/flags/BR.svg) Portuguese (pt-BR)
+- [x] ![DE](img/flags/DE.svg) German (de-DE) by [AndyStgt89](https://github.com/AndyStgt89)
+- [x] ![ZH](img/flags/CN.svg) Simplified Chinese (zh-HANS) by [AriadusTT](https://github.com/AriadusTT)
+- [ ] ![PL](img/flags/PL.svg) Polish (pl-PL) in progress
 
 ## Adding Compatibility for Other Mods
 
@@ -26,11 +30,9 @@ You can add compatibility with other mods by editing `cs-parking-fees/parking-da
 3. Open `cs-parking-fees/parking-data.json` and add the prefab names along with the mod ID.
 4. Submit a pull request with your changes.
 
-
-
 ## Before Build this mod
 
-**Configure your environment:**
+### Configure your environment
 - Create a file named `local.envs` in the project root (same folder as `compile.sh`). Example:
 	```env
 	export GAME_MODS_DIR="/path/to/your/Mods/ParkingFeeControl"
@@ -46,7 +48,7 @@ You can add compatibility with other mods by editing `cs-parking-fees/parking-da
 		</PropertyGroup>
 	</Project>
 	```
-**Build**
+### Build
 
 If you are using Linux, use the `compile.sh` script. But if you are using Windows, simply run your IDE build command.
 
@@ -69,7 +71,7 @@ C# code is organized into `Diagnostics`, `GUI`, `GameIntegration`,
 See [ARCHITECTURE.md](ARCHITECTURE.md) for responsibilities, binding contracts,
 file discovery, and the combined build pipeline.
 
-**Publish**
+### Publish
 
 Publishing uses the Windows CSII toolchain and its mod publisher.
 
@@ -77,10 +79,9 @@ New-mod and new-version publishing validate that the deployed content contains
 the DLL, UI entry point, metadata, and locales before the publisher runs.
 The existing Update profile remains a metadata-only operation.
 
-### Rider Run/Debug configurations
+## Run/Debug configurations
 
-Open `ParkingFeeControl.sln` from the repository root in Rider. Shared configurations
-live in `.run/` and appear in the toolbar's Run/Debug configuration selector.
+Open `ParkingFeeControl.sln` from the repository root. Shared configurations live in `.run/` and appear in the toolbar's Run/Debug configuration selector.
 
 | Configuration | Action |
 | --- | --- |
@@ -89,23 +90,6 @@ live in `.run/` and appear in the toolbar's Run/Debug configuration selector.
 | PublishNewMod | First publish: build Release and create a new Paradox Mods listing (SDK command `Publish`). |
 | PublishNewVersion | Build Release and ship new code to the existing listing (SDK command `NewVersion`). |
 | UpdatePublishedConfiguration | Change listing metadata without building or shipping new code (SDK command `Update`). |
-
-Select a configuration and use **Run**. Publish configurations perform real uploads;
-use **PublishNewVersion** to ship code updates to an existing mod. They reuse the profiles in
-`cs-parking-fees/Properties/PublishProfiles/` and require publisher authentication.
-Build configurations do not publish to Paradox Mods.
-
-`PublishNewVersion` and `UpdatePublishedConfiguration` use the existing `ModId`
-in `Properties/PublishConfiguration.xml`. Use `PublishNewMod` only when creating
-a new listing; configure that XML for the new mod and then retain its assigned ID
-for later updates.
-
-`UpdatePublishedConfiguration` initializes the SDK paths and runs its `Publish`
-target with `NoBuild=true`. It skips compilation, post-processing, UI building,
-and deployment, and passes `Update` to the publisher. It uses the current
-`PublishConfiguration.xml` directly, so edits to `pdx/ABOUT.md` alone are not
-applied by this operation. Update the XML's description, dependencies and thumbnail
-references before running it.
 
 These Windows configurations use the standard .NET installation at
 `C:/Program Files/dotnet/dotnet.exe`. If yours is elsewhere, change the executable
@@ -120,16 +104,23 @@ not attach to the game.
 
 ## Acknowledgments
 
-This mod was developed using as reference the excellent mods from these amazing modders: **yenyang, Bruceyboy24804, franzvz, TDW, DanielVNZ, Triton Supreme**.
+This mod was developed using as a reference the excellent mods from these amazing creators:
+[yenyang](https://mods.paradoxplaza.com/authors/yenyang/cities_skylines_2), 
+[Bruceyboy24804](https://mods.paradoxplaza.com/authors/Bruceyboy24804/cities_skylines_2), 
+[franzvz](https://mods.paradoxplaza.com/authors/franzvz/cities_skylines_2), 
+[TDW](https://mods.paradoxplaza.com/authors/TDW/cities_skylines_2), 
+[DanielVNZ](https://mods.paradoxplaza.com/authors/DanielVNZ/cities_skylines_2),
+and 
+[Triton Supreme](https://mods.paradoxplaza.com/authors/Triton%20Supreme/cities_skylines_2).
 
 Thank you for your work in the CS2 community ❤️
 
 ## License
 
-Copyright (C) 2026 thiago-rcarvalho
+Copyright &copy; 2026 [kpgocek](https://github.com/kpgocek) & [thiago-rcarvalho](https://github.com/thiago-rcarvalho)
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the [GNU General Public License](LICENSE) for more details.
 
-This project incorporates a small amount of third-party MIT-licensed code; see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) for details.
+This project incorporates a small amount of third-party MIT-licensed code; see [third-party notices](THIRD-PARTY-NOTICES.md) for details.
