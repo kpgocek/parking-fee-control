@@ -1,0 +1,9 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="UpdatePublishedConfiguration" type="RunNativeExe" factoryName="Native Executable" folderName="Publish">
+    <option name="EXE_PATH" value="C:/Program Files/dotnet/dotnet.exe" />
+    <option name="PROGRAM_PARAMETERS" value="msbuild &quot;$PROJECT_DIR$/cs-parking-fees/ParkingFeeControl.csproj&quot; -t:BuildGetFullPaths,Publish -p:Configuration=Release -p:PublishProfile=UpdatePublishedConfiguration -p:NoBuild=true" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <option name="PASS_PARENT_ENVS" value="true" />
+    <method v="2" />
+  </configuration>
+</component>

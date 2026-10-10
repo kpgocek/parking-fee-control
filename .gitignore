@@ -4,6 +4,7 @@
 *.pdb
 *.exe
 **/ui/output/**
+parking-fees-ui/output/
 */Library/**
 
 # User-specific files

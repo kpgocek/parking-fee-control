@@ -15,7 +15,7 @@
 
 using System;
 
-namespace ParkingFeeControl
+namespace ParkingFeeControl.Diagnostics
 {
     public static class ModLogger
     {

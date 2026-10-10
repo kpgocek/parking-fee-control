@@ -20,9 +20,9 @@ using System.Text;
 using Colossal.Json;
 using Game;
 using Colossal;
-using ParkingFeeControl;
+using ParkingFeeControl.Diagnostics;
 
-namespace ParkingFeeControl
+namespace ParkingFeeControl.Localization
 {
 
     /// <summary>

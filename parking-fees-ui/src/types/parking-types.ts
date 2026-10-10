@@ -14,8 +14,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 export interface ParkingFeeConfig {
-  enabled: boolean;
-  defaultParkingFee: number;
   categories: Category[];
 }
 

@@ -1,17 +1,9 @@
 const path = require('path');
-const MOD = require('./mod.json');
-const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const { CSSPresencePlugin } = require('./tools/css-presence');
+const MOD = {
+  ...require('./mod.json'),
+  ...(process.env.PARKING_FEE_VERSION ? { version: process.env.PARKING_FEE_VERSION } : {}),
+};
 const TerserPlugin = require('terser-webpack-plugin');
-
-const gray = (text) => `\x1b[90m${text}\x1b[0m`;
-
-
-const CSII_USERDATAPATH = process.env.CSII_USERDATAPATH;
-
-if (!CSII_USERDATAPATH) {
-    throw "CSII_USERDATAPATH environment variable is not set, ensure the CSII Modding Toolchain is installed correctly";
-}
 
 const OUTPUT_DIR = './output';
 
@@ -26,7 +18,7 @@ const banner = `
 
 module.exports = {
   mode: 'production',
-  stats: 'none',
+  stats: 'errors-warnings',
   entry: {
     [MOD.id]: './src/index.tsx',
   },
@@ -51,26 +43,6 @@ module.exports = {
         exclude: /node_modules/,
       },
       {
-        test: /\.s?css$/,
-        include: path.join(__dirname, 'src'),
-        use: [
-          MiniCssExtractPlugin.loader,
-          {
-            loader: 'css-loader',
-            options: {
-              url: true,
-              importLoaders: 1,
-              modules: {
-                auto: true,
-                exportLocalsConvention: 'camelCase',
-                localIdentName: '[local]_[hash:base64:3]',
-              },
-            },
-          },
-          'sass-loader',
-        ],
-      },
-      {
         test: /\.(png|jpe?g|gif|svg)$/i,
         type: 'asset/resource',
         generator: {
@@ -88,6 +60,8 @@ module.exports = {
   },
   output: {
     path: path.resolve(__dirname, OUTPUT_DIR),
+    filename: '[name].mjs',
+    clean: true,
     library: {
       type: 'module',
     },
@@ -112,15 +86,13 @@ module.exports = {
     outputModule: true,
   },
   plugins: [
-    new MiniCssExtractPlugin(),
-    new CSSPresencePlugin(),
     {
       apply(compiler) {
-        let runCount = 0;
-        compiler.hooks.done.tap('AfterDonePlugin', (stats) => {
-          console.log(stats.toString({ colors: true }));
-          console.log(`\n🔨 ${!runCount++ ? 'Built' : 'Updated'} ${MOD.id}`);
-          console.log('   ' + gray(path.resolve(__dirname, OUTPUT_DIR)) + '\n');
+        compiler.hooks.thisCompilation.tap('ModMetadataPlugin', (compilation) => {
+          compilation.hooks.processAssets.tap(
+            { name: 'ModMetadataPlugin', stage: compiler.webpack.Compilation.PROCESS_ASSETS_STAGE_ADDITIONAL },
+            () => compilation.emitAsset('mod.json', new compiler.webpack.sources.RawSource(JSON.stringify(MOD, null, 2) + '\n')),
+          );
         });
       },
     },

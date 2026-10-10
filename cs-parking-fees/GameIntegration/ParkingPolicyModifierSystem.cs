@@ -24,8 +24,10 @@ using Game.UI;
 using Game.UI.InGame;
 using Unity.Collections;
 using Unity.Entities;
+using ParkingFeeControl.Diagnostics;
+using ParkingFeeControl.Persistence;
 
-namespace ParkingFeeControl
+namespace ParkingFeeControl.GameIntegration
 {
     /// <summary>
     /// System to modify parking policies on buildings (parking lots, facilities).

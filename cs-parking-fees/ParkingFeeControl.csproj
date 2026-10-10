@@ -1,8 +1,6 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
-	<!-- ============================================================
-         PROJECT METADATA
-         ============================================================ -->
+	<!-- PROJECT METADATA -->
 
 	<PropertyGroup>
 		<Title>Parking Fee Control</Title>
@@ -14,18 +12,14 @@
 		<RepositoryUrl>https://github.com/kpgocek/parking-fee-control</RepositoryUrl>
 	</PropertyGroup>
 
-
-	<!-- ============================================================
-         PROJECT CONFIGURATION
-         ============================================================ -->
+	<!-- PROJECT CONFIGURATION -->
 
 	<PropertyGroup>
-		<TargetFramework>net472</TargetFramework>
+		<TargetFramework>net48</TargetFramework>
 		<AssemblyName>ParkingFeeControl</AssemblyName>
 		<RootNamespace>ParkingFeeControl</RootNamespace>
 
 		<!-- Compiler -->
-		<LangVersion>latest</LangVersion>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>disable</ImplicitUsings>
 		<EnableNETAnalyzers>true</EnableNETAnalyzers>
@@ -49,13 +43,11 @@
 		<PdxDirectory>$(MSBuildProjectDirectory)\..\pdx</PdxDirectory>
 	</PropertyGroup>
 
-
-	<!-- ============================================================
-         CITIES: SKYLINES II SDK
-         ============================================================ -->
+	<!-- CITIES: SKYLINES II SDK -->
 
 	<PropertyGroup>
-		<CSII_TOOLPATH>$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))</CSII_TOOLPATH>
+		<CSII_TOOLPATH Condition="'$(CSII_TOOLPATH)' == ''">$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))</CSII_TOOLPATH>
+		<ManagedPath Condition="'$(ManagedPath)' == '' and '$(CSII_MANAGEDPATH)' != ''">$(CSII_MANAGEDPATH)</ManagedPath>
 	</PropertyGroup>
 
 	<Import
@@ -65,6 +57,32 @@
 	<Import
         Project="$(CSII_TOOLPATH)\Mod.targets"
         Condition="'$(OS)' == 'Windows_NT' and Exists('$(CSII_TOOLPATH)\Mod.targets')" />
+
+	<!-- The SDK reads user environment variables. Also support process environments
+         (terminal, IDE and CI) without requiring changes to machine settings. -->
+	<PropertyGroup>
+		<LangVersion>latest</LangVersion>
+		<ManagedPath Condition="'$(MANAGED_DLLS_PATH)' != ''">$(MANAGED_DLLS_PATH)</ManagedPath>
+		<ManagedPath Condition="'$(ManagedPath)' == ''">$(CSII_MANAGEDPATH)</ManagedPath>
+		<MANAGED_DLLS_PATH Condition="'$(MANAGED_DLLS_PATH)' == ''">$(ManagedPath)</MANAGED_DLLS_PATH>
+		<UserDataPath Condition="'$(CSII_USERDATAPATH)' != ''">$(CSII_USERDATAPATH)</UserDataPath>
+		<LocalModsPath Condition="'$(CSII_LOCALMODSPATH)' != ''">$(CSII_LOCALMODSPATH)</LocalModsPath>
+		<UnityModProjectPath Condition="'$(CSII_UNITYMODPROJECTPATH)' != ''">$(CSII_UNITYMODPROJECTPATH)</UnityModProjectPath>
+		<ModPostProcessorPath Condition="'$(CSII_MODPOSTPROCESSORPATH)' != ''">$(CSII_MODPOSTPROCESSORPATH)</ModPostProcessorPath>
+		<ModPublisherPath Condition="'$(CSII_MODPUBLISHERPATH)' != ''">$(CSII_MODPUBLISHERPATH)</ModPublisherPath>
+		<MSCORLIBPath Condition="'$(CSII_MSCORLIBPATH)' != ''">$(CSII_MSCORLIBPATH)</MSCORLIBPath>
+		<EntitiesVersion Condition="'$(CSII_ENTITIESVERSION)' != ''">$(CSII_ENTITIESVERSION)</EntitiesVersion>
+		<EntityPackagePath>$(UnityModProjectPath)\Library\PackageCache\com.unity.entities@$(EntitiesVersion)\Unity.Entities\SourceGenerators</EntityPackagePath>
+	</PropertyGroup>
+
+	<ItemGroup Condition="'$(ModPropsFile)' != ''">
+		<_SDKAnalyzers Include="@(Analyzer)" />
+		<Analyzer Remove="@(_SDKAnalyzers)" />
+		<Analyzer Include="@(_SDKAnalyzers->'$(EntityPackagePath)\%(Filename)%(Extension)')" />
+		<Reference Include="$(MSCORLIBPath)" Condition="'$(MSCORLIBPath)' != ''">
+			<Private>false</Private>
+		</Reference>
+	</ItemGroup>
 
 	<Target Name="ValidateCSIIEnvironment"
             BeforeTargets="PrepareForBuild"
@@ -83,10 +101,7 @@
             Text="CSII Mod.targets not found. Check CSII_TOOLPATH." />
 	</Target>
 
-
-	<!-- ============================================================
-         GAME AND UNITY REFERENCES
-         ============================================================ -->
+	<!-- GAME AND UNITY REFERENCES -->
 
 	<ItemGroup>
 		<!-- Unity Engine -->
@@ -167,19 +182,7 @@
 		</Reference>
 	</ItemGroup>
 
-
-	<!-- ============================================================
-         PACKAGES
-         ============================================================ -->
-
-	<ItemGroup>
-		<PackageReference Include="JsonPoke" Version="1.2.0" />
-	</ItemGroup>
-
-
-	<!-- ============================================================
-         RESOURCES AND CONTENT
-         ============================================================ -->
+	<!-- RESOURCES AND CONTENT -->
 
 	<ItemGroup>
 		<!-- Embedded game data -->
@@ -190,89 +193,92 @@
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 
-		<!-- CSII SDK configuration files -->
-		<None Include="$(ModPropsFile)"
-              Link="Properties\Mod.props"
-              Condition="'$(ModPropsFile)' != ''" />
-
-		<None Include="$(ModTargetsFile)"
-              Link="Properties\Mod.targets"
-              Condition="'$(ModTargetsFile)' != ''" />
 	</ItemGroup>
 
-
-	<!-- ============================================================
-         FRONTEND CONFIGURATION
-         ============================================================ -->
+	<!-- FRONTEND CONFIGURATION -->
 
 	<PropertyGroup>
-		<UIRoot>$(MSBuildProjectDirectory)\ui</UIRoot>
+		<UIRoot>$(MSBuildProjectDirectory)\..\parking-fees-ui</UIRoot>
 		<UIOutput>$(UIRoot)\output</UIOutput>
 		<UIBuildStamp>$(UIOutput)\.build-stamp</UIBuildStamp>
+		<UIRestoreStamp>$(UIRoot)\node_modules\.parking-fee-restore-stamp</UIRestoreStamp>
+		<UIVersionFile>$(MSBuildProjectDirectory)\obj\$(Configuration)\ui-version.txt</UIVersionFile>
 	</PropertyGroup>
 
-	<ItemGroup>
-		<!-- Frontend sources -->
-		<UIInputs Include="$(UIRoot)\src\**\*.*" />
+	<!-- FRONTEND BUILD PIPELINE -->
 
-		<!-- Frontend configuration -->
-		<UIInputs Include="$(UIRoot)\package.json" />
-		<UIInputs Include="$(UIRoot)\package-lock.json" />
-		<UIInputs Include="$(UIRoot)\mod.json" />
-
-		<UIInputs Include="$(UIRoot)\tsconfig.json"
-                  Condition="Exists('$(UIRoot)\tsconfig.json')" />
-	</ItemGroup>
-
-
-	<!-- ============================================================
-         FRONTEND BUILD PIPELINE
-         ============================================================ -->
-
-	<!-- Install dependencies when node_modules is missing -->
+	<!-- Restore when dependencies are missing or either package manifest changes. -->
 	<Target Name="RestoreUI"
-            Condition="'$(OS)' == 'Windows_NT'
-                       and '$(NeedBuild)' == 'true'
-                       and !Exists('$(UIRoot)\node_modules')">
+			Inputs="$(UIRoot)\package.json;$(UIRoot)\package-lock.json"
+			Outputs="$(UIRestoreStamp)"
+			Condition="'$(ModPublisherCommand)' != 'Update' and '$(DesignTimeBuild)' != 'true'">
 
 		<Message Importance="high"
                  Text="Restoring frontend dependencies..." />
 
 		<Exec Command="npm ci"
               WorkingDirectory="$(UIRoot)" />
+		<Touch Files="$(UIRestoreStamp)" AlwaysCreate="true" />
 
 		<!-- Force UI rebuild after dependency restoration -->
 		<Delete Files="$(UIBuildStamp)" />
 	</Target>
 
+	<Target Name="PrepareUIBuild" DependsOnTargets="RestoreUI">
+		<!-- Keep build-only UI inputs out of the IDE project tree. -->
+		<ItemGroup>
+			<!-- Frontend sources -->
+			<UIInputs Include="$(UIRoot)\src\**\*.*" />
+			<UIInputs Include="$(UIRoot)\types\**\*.*" />
+			<UIInputs Include="$(UIRoot)\webpack.config.js" />
+			<UIInputs Include="$(MSBuildProjectFullPath)" />
 
-	<!-- Build frontend before CSII deployment -->
+			<!-- Frontend configuration -->
+			<UIInputs Include="$(UIRoot)\package.json" />
+			<UIInputs Include="$(UIRoot)\package-lock.json" />
+			<UIInputs Include="$(UIRoot)\mod.json" />
+
+			<UIInputs Include="$(UIRoot)\tsconfig.json"
+                  Condition="Exists('$(UIRoot)\tsconfig.json')" />
+		</ItemGroup>
+		<MakeDir Directories="$(MSBuildProjectDirectory)\obj\$(Configuration)" />
+		<WriteLinesToFile File="$(UIVersionFile)" Lines="$(Version)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+	</Target>
+
+	<!-- Build frontend independently of deployment, including on Linux. -->
 	<Target Name="BuildUI"
-            BeforeTargets="DeployWIP"
-            DependsOnTargets="RestoreUI"
-            Inputs="@(UIInputs)"
-            Outputs="$(UIBuildStamp)"
-            Condition="'$(OS)' == 'Windows_NT'
-                       and '$(NeedBuild)' == 'true'">
+            DependsOnTargets="PrepareUIBuild"
+            Inputs="@(UIInputs);$(UIVersionFile)"
+            Outputs="$(UIBuildStamp);$(UIOutput)\ParkingFeeControl.mjs;$(UIOutput)\mod.json"
+            Condition="'$(ModPublisherCommand)' != 'Update' and '$(DesignTimeBuild)' != 'true'">
 
 		<Message Importance="high"
                  Text="Building Parking Fee Control UI..." />
 
 		<Exec Command="npm run build"
+              EnvironmentVariables="PARKING_FEE_VERSION=$(Version)"
               WorkingDirectory="$(UIRoot)" />
 
-		<Touch Files="$(UIBuildStamp)"
-               AlwaysCreate="true" />
+		<Error Condition="!Exists('$(UIOutput)\ParkingFeeControl.mjs') or !Exists('$(UIOutput)\mod.json')"
+               Text="UI build did not produce ParkingFeeControl.mjs and mod.json." />
+		<!-- Webpack preserves timestamps for unchanged assets; mark verified outputs current. -->
+		<Touch Files="$(UIOutput)\ParkingFeeControl.mjs;$(UIOutput)\mod.json" />
+		<Touch Files="$(UIBuildStamp)" AlwaysCreate="true" />
 	</Target>
 
-
-	<!-- Copy frontend after CSII deployment -->
+	<!-- Assemble UI in the C# output before the SDK copies it to DeployDir. -->
+	<PropertyGroup>
+		<ModAssemblyDependencies>BuildUI</ModAssemblyDependencies>
+		<ModAssemblyDependencies Condition="'$(OS)' == 'Windows_NT'">RunModPostProcessor;BuildUI</ModAssemblyDependencies>
+	</PropertyGroup>
 	<Target Name="CopyUIFiles"
-            AfterTargets="DeployWIP"
-            Condition="'$(OS)' == 'Windows_NT'
-                       and '$(NeedBuild)' == 'true'
-                       and '$(DeployDir)' != ''
-                       and Exists('$(UIOutput)')">
+            BeforeTargets="DeployWIP"
+            AfterTargets="Build"
+            DependsOnTargets="$(ModAssemblyDependencies)"
+            Condition="'$(NeedBuild)' == 'true' or '$(OS)' != 'Windows_NT'">
+
+		<Error Condition="!Exists('$(UIOutput)\ParkingFeeControl.mjs') or !Exists('$(UIOutput)\mod.json')"
+               Text="UI build did not produce ParkingFeeControl.mjs and mod.json." />
 
 		<ItemGroup>
 			<UIFiles Include="$(UIOutput)\**\*.*"
@@ -280,15 +286,14 @@
 		</ItemGroup>
 
 		<Message Importance="high"
-                 Text="Deploying frontend assets to $(DeployDir)" />
+				 Text="Assembling frontend assets in $(OutDir)" />
 
 		<Copy
             SourceFiles="@(UIFiles)"
-            DestinationFiles="@(UIFiles->'$(DeployDir)\%(RecursiveDir)%(Filename)%(Extension)')"
+            DestinationFiles="@(UIFiles->'$(OutDir)\%(RecursiveDir)%(Filename)%(Extension)')"
             SkipUnchangedFiles="true"
             Condition="'@(UIFiles)' != ''" />
 	</Target>
-
 
 	<!-- Clean generated frontend files -->
 	<Target Name="CleanUIOutput"
@@ -298,26 +303,16 @@
 		<RemoveDir Directories="$(UIOutput)" />
 	</Target>
 
+	<!-- VERSION SYNCHRONIZATION -->
 
-	<!-- ============================================================
-         VERSION SYNCHRONIZATION
-         ============================================================ -->
-
-	<!-- Synchronize the public version with frontend metadata -->
-	<Target Name="SetupVersion"
-            BeforeTargets="BeforeBuild"
-            Condition="Exists('$(UIRoot)\mod.json')">
-
-		<JsonPoke
-            ContentPath="$(UIRoot)\mod.json"
-            Query="$.version"
-            Value="$(Version)" />
+	<!-- The UI build receives Version and emits matching metadata without editing sources. -->
+	<Target Name="ValidateModContent" BeforeTargets="RunModPublisher"
+            Condition="'$(ModPublisherCommand)' != 'Update'">
+		<Error Condition="!Exists('$(ContentFullPath)\ParkingFeeControl.dll') or !Exists('$(ContentFullPath)\ParkingFeeControl.mjs') or !Exists('$(ContentFullPath)\mod.json') or !Exists('$(ContentFullPath)\Locale\en-US.json')"
+               Text="Publishing content is incomplete. Build the complete mod before publishing." />
 	</Target>
 
-
-	<!-- ============================================================
-         PARADOX MODS PUBLISHING METADATA
-         ============================================================ -->
+	<!-- PARADOX MODS PUBLISHING METADATA -->
 
 	<!-- Prepare metadata for release builds -->
 	<Target Name="SetupAttributes"

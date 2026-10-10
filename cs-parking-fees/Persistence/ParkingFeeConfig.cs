@@ -18,8 +18,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
+using ParkingFeeControl.Diagnostics;
 
-namespace ParkingFeeControl
+namespace ParkingFeeControl.Persistence
 {
     /// <summary>
     /// Configuration class for Parking Fee Control mod.

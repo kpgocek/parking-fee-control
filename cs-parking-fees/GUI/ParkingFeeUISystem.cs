@@ -26,8 +26,11 @@ using Game.UI;
 using Game.UI.InGame;
 using Unity.Collections;
 using Unity.Entities;
+using ParkingFeeControl.Diagnostics;
+using ParkingFeeControl.GameIntegration;
+using ParkingFeeControl.Persistence;
 
-namespace ParkingFeeControl.UI
+namespace ParkingFeeControl.GUI
 {
     public class ParkingFeeUIData : IJsonWritable
     {

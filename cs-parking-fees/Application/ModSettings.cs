@@ -14,11 +14,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 using System;
-using System.IO;
 using Colossal.IO.AssetDatabase;
 using Game.Settings;
 using Game.Modding;
-using Newtonsoft.Json;
 
 namespace ParkingFeeControl
 {
@@ -75,7 +73,7 @@ namespace ParkingFeeControl
             if (string.IsNullOrEmpty(customName))
                 return false;
 
-            string tag = GetIgnoreTagString();
+            var tag = GetIgnoreTagString();
             if (string.IsNullOrEmpty(tag))
                 return false;
 

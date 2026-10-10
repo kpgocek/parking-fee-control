@@ -19,8 +19,9 @@ using System.IO;
 using System.Linq;
 using Colossal.IO.AssetDatabase;
 using Newtonsoft.Json;
+using ParkingFeeControl.Diagnostics;
 
-namespace ParkingFeeControl
+namespace ParkingFeeControl.Persistence
 {
     /// <summary>
     /// Loads parking-data.json which enumerates supported prefabs per category.

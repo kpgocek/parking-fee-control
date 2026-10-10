@@ -19,6 +19,11 @@ using Colossal.Logging;
 using Game;
 using Game.Modding;
 using Game.SceneFlow;
+using ParkingFeeControl.Diagnostics;
+using ParkingFeeControl.GameIntegration;
+using ParkingFeeControl.GUI;
+using ParkingFeeControl.Localization;
+using ParkingFeeControl.Persistence;
 
 namespace ParkingFeeControl
 {
@@ -114,7 +119,7 @@ namespace ParkingFeeControl
                 Config = ParkingFeeConfig.Load();
                 Config.LogSettings();
 
-                // Register localization from external JSON files if present, otherwise fall back to embedded LocaleEN
+                // Register localization from the Locale files packaged alongside the mod.
                 var locales = LocaleFileLoader.LoadDictionaries(ModPath);
                 if (locales != null)
                 {
@@ -133,7 +138,7 @@ namespace ParkingFeeControl
                 updateSystem.UpdateAt<ParkingPolicyModifierSystem>(SystemUpdatePhase.PreSimulation);
 
                 // Register UI system
-                updateSystem.UpdateAt<UI.ParkingFeeUISystem>(SystemUpdatePhase.UIUpdate);
+                updateSystem.UpdateAt<ParkingFeeUISystem>(SystemUpdatePhase.UIUpdate);
 
                 ModLogger.Info("✓ Systems registered successfully!");
                 ModLogger.Info("✓ Parking Fee Control mod loaded successfully!");

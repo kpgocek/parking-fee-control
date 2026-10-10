@@ -1,0 +1,9 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Build Debug" type="RunNativeExe" factoryName="Native Executable" folderName="Build">
+    <option name="EXE_PATH" value="C:/Program Files/dotnet/dotnet.exe" />
+    <option name="PROGRAM_PARAMETERS" value="build &quot;$PROJECT_DIR$/ParkingFeeControl.sln&quot; -c Debug" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <option name="PASS_PARENT_ENVS" value="true" />
+    <method v="2" />
+  </configuration>
+</component>
