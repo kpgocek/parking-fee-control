@@ -5,7 +5,7 @@ This project is licensed under the GNU General Public License v3.0 (see
 from other Cities: Skylines II mods, listed below with their original
 license terms preserved as required.
 
-## `cs-parking-fees/ui/src/mods/VanillaComponentResolver.tsx`
+## `parking-fees-ui/src/mods/VanillaComponentResolver.tsx`
 
 This file adapts the `VanillaComponentResolver` helper pattern originally
 written by **Klyte45** for use in vanilla-component-aware CS2 mod UIs, as
