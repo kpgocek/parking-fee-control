@@ -62,6 +62,9 @@ namespace ParkingFeeControl.GameIntegration
 
         // States
         private bool m_InitialSetupCompleted;
+        private bool m_MissingPolicyWarned;
+        private bool m_OutOfRangeFeeWarned;
+        private float m_SecondsSinceRefresh;
 
         // Cache of parking fee policy entity (obtained from prefab)
         private Entity m_ParkingFeePolicyEntity = Entity.Null;
@@ -71,6 +74,7 @@ namespace ParkingFeeControl.GameIntegration
         {
             m_ParkingRefreshRequested = true;
             m_DistrictRefreshRequested = true;
+            m_SecondsSinceRefresh = 0f;
         }
 
         protected override void OnCreate()
@@ -129,11 +133,6 @@ namespace ParkingFeeControl.GameIntegration
                 return;
             }
 
-            if (!EnsurePolicyEntities())
-            {
-                ModLogger.Warn("Parking policy prefabs are not available yet; will retry.");
-            }
-
             ApplyNow();
 
             m_InitialSetupCompleted = true;
@@ -145,9 +144,17 @@ namespace ParkingFeeControl.GameIntegration
                 return;
             }
 
-            if (!EnsurePolicyEntities())
+            if (!EnsurePolicyEntities() && !m_MissingPolicyWarned)
             {
                 ModLogger.Warn("Parking policy prefabs are not available yet; will retry.");
+                m_MissingPolicyWarned = true;
+            }
+
+            // Periodically re-apply fees, as configured by the Update Frequency option.
+            m_SecondsSinceRefresh += UnityEngine.Time.unscaledDeltaTime;
+            if (m_SecondsSinceRefresh >= Mod.Settings.GetUpdateFrequencySeconds())
+            {
+                ApplyNow();
             }
 
             if (m_ParkingFeePolicyEntity != Entity.Null)
@@ -235,7 +242,10 @@ namespace ParkingFeeControl.GameIntegration
             }
 
             var prefabName = GetPrefabName(entity);
-            var fee = Mod.Config.GetParkingFeeForPrefab(prefabName);
+            if (Mod.Config.GetParkingFeeForPrefab(prefabName) is not { } fee)
+            {
+                return;
+            }
 
             ApplyPolicy(
                 entity,
@@ -261,12 +271,16 @@ namespace ParkingFeeControl.GameIntegration
 
         private void ApplyPolicy(Entity entity, Entity policyEntity, int targetFee)
         {
-            if (targetFee is < 0 or > 50)
+            var clampedFee = ParkingFeeConfig.ClampFee(targetFee);
+            if (clampedFee != targetFee)
             {
-                throw new ArgumentOutOfRangeException(
-                    nameof(targetFee),
-                    targetFee,
-                    "Parking fee must be between 0 and 50.");
+                if (!m_OutOfRangeFeeWarned)
+                {
+                    ModLogger.Warn($"Parking fee {targetFee} is out of range; clamping to {clampedFee}");
+                    m_OutOfRangeFeeWarned = true;
+                }
+
+                targetFee = clampedFee;
             }
 
             if (policyEntity == Entity.Null)
@@ -282,8 +296,8 @@ namespace ParkingFeeControl.GameIntegration
 
             var active = targetFee > 0;
 
-            // Nieaktywna polityka reprezentuje opłatę 0.
-            // Wartość samego suwaka polityki pozostaje w zakresie 1–50.
+            // An inactive policy represents a fee of 0.
+            // The policy slider value itself stays within 1–50.
             var adjustment = Math.Max(1, targetFee);
 
             PoliciesUISystem.SetPolicy(

@@ -29,6 +29,14 @@ namespace ParkingFeeControl.Persistence
     public class ParkingFeeConfig
     {
         public const string DistrictsCategoryType = "districts";
+        public const int MinFee = 0;
+        public const int MaxFee = 50;
+
+        /// <summary>
+        /// Clamp a fee to the range accepted by the game's parking fee policies.
+        /// </summary>
+        public static int ClampFee(int fee) => Math.Max(MinFee, Math.Min(MaxFee, fee));
+
         public class PrefabEntry
         {
             [JsonProperty("name")]
@@ -159,16 +167,20 @@ namespace ParkingFeeControl.Persistence
                     var config = JsonConvert.DeserializeObject<ParkingFeeConfig>(json);
                     if (config != null)
                     {
+                        // Hand-edited files may contain fees the game's policies cannot represent.
+                        var changed = ClampFees(config);
+
                         // Merge with shipping/embedded parking-data so updates can add new prefabs/categories
                         var parkingData = ParkingDataLoader.Load(Mod.ModPath, showLog);
                         if (parkingData != null)
                         {
-                            var changed = MergeWithParkingData(config, parkingData);
-                            if (changed)
-                            {
-                                config.Save();
-                                ModLogger.Debug("parking-config.json updated with new entries from parking-data.json");
-                            }
+                            changed |= MergeWithParkingData(config, parkingData);
+                        }
+
+                        if (changed)
+                        {
+                            config.Save();
+                            ModLogger.Debug("parking-config.json normalized and updated from parking-data.json");
                         }
 
                         ModLogger.Debug("Configuration loaded from JSON file");
@@ -291,12 +303,13 @@ namespace ParkingFeeControl.Persistence
 
         /// <summary>
         /// Get the parking fee for a specific prefab name. If a prefab-specific fee exists, return it; otherwise use the category default.
+        /// Returns null for prefabs the configuration does not manage, so their policies are left untouched.
         /// </summary>
-        public int GetParkingFeeForPrefab(string prefabName)
+        public int? GetParkingFeeForPrefab(string prefabName)
         {
             if (string.IsNullOrEmpty(prefabName))
             {
-                return 10; // fallback default
+                return null;
             }
 
             foreach (var cat in Categories)
@@ -309,8 +322,8 @@ namespace ParkingFeeControl.Persistence
                 }
             }
 
-            // No category matched - return fallback default
-            return 10;
+            // Not a managed prefab (e.g. a custom asset not listed in parking-data.json)
+            return null;
         }
 
         /// <summary>
@@ -324,7 +337,39 @@ namespace ParkingFeeControl.Persistence
         }
 
         /// <summary>
-        /// Create a deep clone of the configuration for UI binding.
+        /// Clamp every category default and prefab override into the valid fee range.
+        /// </summary>
+        /// <returns>True if any fee was changed.</returns>
+        private static bool ClampFees(ParkingFeeConfig config)
+        {
+            var changed = false;
+
+            foreach (var category in config.Categories)
+            {
+                var defaultFee = ClampFee(category.DefaultFee);
+                if (defaultFee != category.DefaultFee)
+                {
+                    ModLogger.Warn($"Category '{category.Type}' default fee {category.DefaultFee} is out of range; using {defaultFee}");
+                    category.DefaultFee = defaultFee;
+                    changed = true;
+                }
+
+                foreach (var prefab in category.Prefabs)
+                {
+                    if (prefab.Fee is { } fee && ClampFee(fee) != fee)
+                    {
+                        prefab.Fee = ClampFee(fee);
+                        ModLogger.Warn($"Prefab '{prefab.Name}' fee {fee} is out of range; using {prefab.Fee}");
+                        changed = true;
+                    }
+                }
+            }
+
+            return changed;
+        }
+
+        /// <summary>
+        /// Sync the user configuration with the shipped parking-data: add new categories and prefabs, drop removed ones.
         /// </summary>
         private static bool MergeWithParkingData(ParkingFeeConfig config, ParkingDataLoader.ParkingData parkingData)
         {

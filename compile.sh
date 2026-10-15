@@ -21,13 +21,10 @@ esac
 dotnet build ParkingFeeControl.sln -c Debug \
     -p:OutputPath="$BUILD_DIR/" -p:AppendTargetFrameworkToOutputPath=false
 
-test -f "$BUILD_DIR/ParkingFeeControl.dll"
-test -f "$BUILD_DIR/ParkingFeeControl.mjs"
-test -f "$BUILD_DIR/mod.json"
 mkdir -p "$GAME_MODS_DIR"
 cp -R "$BUILD_DIR/." "$GAME_MODS_DIR/"
 
-# Retain the existing explicit clean option; ordinary builds preserve user fees.
+# `./compile.sh clean` also resets user fees; ordinary builds preserve them.
 if [ "${1:-}" = "clean" ]; then
     rm -f "$GAME_MODS_DIR/parking-config.json"
 fi

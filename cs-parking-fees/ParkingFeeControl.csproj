@@ -26,8 +26,8 @@
 		<EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
 
 		<!-- Versioning -->
-		<Version>0.5.1</Version>
-		<AssemblyVersion>0.5.1.0</AssemblyVersion>
+		<Version>0.5.2</Version>
+		<AssemblyVersion>$(Version).0</AssemblyVersion>
 		<FileVersion>$(Version)</FileVersion>
 
 		<!-- Timestamp-based build identifier -->

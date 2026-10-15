@@ -43,11 +43,15 @@ namespace ParkingFeeControl.Localization
             var result = new Dictionary<string, Dictionary<string, string>>();
 
             if (string.IsNullOrEmpty(modPath))
+            {
                 return result;
+            }
 
             var localeDir = Path.Combine(modPath, "Locale");
             if (!Directory.Exists(localeDir))
+            {
                 return result;
+            }
 
             foreach (var file in Directory.GetFiles(localeDir, "*.json", SearchOption.TopDirectoryOnly))
             {
@@ -63,12 +67,16 @@ namespace ParkingFeeControl.Localization
                     }
 
                     if (string.IsNullOrWhiteSpace(json))
+                    {
                         continue;
+                    }
 
                     var loaded = JSON.Load(json);
                     JSON.MakeInto<Dictionary<string, string>>(loaded, out var dictionary);
                     if (dictionary == null)
+                    {
                         continue;
+                    }
 
                     result[localeId] = dictionary;
                 }

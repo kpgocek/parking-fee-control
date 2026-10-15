@@ -107,8 +107,8 @@ namespace ParkingFeeControl.GUI
 
     public struct CategoryFeeUpdate : IJsonReadable
     {
-        public string categoryType;
-        public float newFee;
+        internal string CategoryType;
+        internal float NewFee;
 
         public void Read(IJsonReader reader)
         {
@@ -116,12 +116,12 @@ namespace ParkingFeeControl.GUI
 
             if (reader.ReadProperty("categoryType"))
             {
-                reader.Read(out categoryType);
+                reader.Read(out CategoryType);
             }
 
             if (reader.ReadProperty("newFee"))
             {
-                reader.Read(out newFee);
+                reader.Read(out NewFee);
             }
 
             reader.ReadMapEnd();
@@ -130,9 +130,9 @@ namespace ParkingFeeControl.GUI
 
     public struct PrefabFeeUpdate : IJsonReadable
     {
-        public string categoryType;
-        public string prefabName;
-        public float newFee;
+        internal string CategoryType;
+        internal string PrefabName;
+        internal float NewFee;
 
         public void Read(IJsonReader reader)
         {
@@ -140,17 +140,17 @@ namespace ParkingFeeControl.GUI
 
             if (reader.ReadProperty("categoryType"))
             {
-                reader.Read(out categoryType);
+                reader.Read(out CategoryType);
             }
 
             if (reader.ReadProperty("prefabName"))
             {
-                reader.Read(out prefabName);
+                reader.Read(out PrefabName);
             }
 
             if (reader.ReadProperty("newFee"))
             {
-                reader.Read(out newFee);
+                reader.Read(out NewFee);
             }
 
             reader.ReadMapEnd();
@@ -409,7 +409,7 @@ namespace ParkingFeeControl.GUI
 
         private void UpdateCategoryFee(CategoryFeeUpdate update)
         {
-            var category = CurrentConfig.Categories.FirstOrDefault(c => c.Type == update.categoryType);
+            var category = CurrentConfig.Categories.FirstOrDefault(c => c.Type == update.CategoryType);
             if (category == null)
             {
                 return;
@@ -418,13 +418,13 @@ namespace ParkingFeeControl.GUI
             var oldDefaultFee = category.DefaultFee;
 
             // Update category default fee
-            category.DefaultFee = (float)Math.Round(update.newFee);
+            category.DefaultFee = (float)Math.Round(update.NewFee);
 
             // Update all prefabs in this category maintaining the difference from category
             foreach (var prefab in category.Prefabs)
             {
                 var difference = oldDefaultFee - prefab.Fee;
-                var newFee = update.newFee - difference;
+                var newFee = update.NewFee - difference;
                 // Clamp between 0 and 50
                 newFee = Math.Max(0, Math.Min(50, newFee));
                 prefab.Fee = (float)Math.Round(newFee);
@@ -433,7 +433,7 @@ namespace ParkingFeeControl.GUI
             NotifyConfigChanged();
 
             // Districts: persist fees to ECS components on the entity (saved with the game)
-            if (IsDistrictsCategory(update.categoryType))
+            if (IsDistrictsCategory(update.CategoryType))
             {
                 foreach (var prefab in category.Prefabs)
                 {
@@ -448,17 +448,17 @@ namespace ParkingFeeControl.GUI
                     string.Equals(c.Type, ParkingFeeConfig.DistrictsCategoryType, StringComparison.OrdinalIgnoreCase));
                 if (districtCategory != null)
                 {
-                    districtCategory.DefaultFee = (int)Math.Round(update.newFee);
+                    districtCategory.DefaultFee = (int)Math.Round(update.NewFee);
                 }
                 Mod.Config.Save();
                 return;
             }
 
             // Non-district categories: persist per-prefab fees to JSON config
-            var modCategory = Mod.Config.Categories.FirstOrDefault(c => c.Type == update.categoryType);
+            var modCategory = Mod.Config.Categories.FirstOrDefault(c => c.Type == update.CategoryType);
             if (modCategory != null)
             {
-                modCategory.DefaultFee = (int)Math.Round(update.newFee);
+                modCategory.DefaultFee = (int)Math.Round(update.NewFee);
 
                 // Update prefabs in mod config maintaining the difference
                 foreach (var modPrefab in modCategory.Prefabs)
@@ -466,7 +466,7 @@ namespace ParkingFeeControl.GUI
                     if (modPrefab.Fee.HasValue)
                     {
                         var difference = oldDefaultFee - modPrefab.Fee.Value;
-                        var newFee = update.newFee - difference;
+                        var newFee = update.NewFee - difference;
                         // Clamp between 0 and 50
                         newFee = Math.Max(0, Math.Min(50, newFee));
                         modPrefab.Fee = (int)Math.Round(newFee);
@@ -480,39 +480,41 @@ namespace ParkingFeeControl.GUI
 
         private void UpdatePrefabFee(PrefabFeeUpdate update)
         {
-            var category = CurrentConfig.Categories.FirstOrDefault(c => c.Type == update.categoryType);
+            var category = CurrentConfig.Categories.FirstOrDefault(c => c.Type == update.CategoryType);
             if (category == null)
             {
                 return;
             }
 
-            var prefab = category.Prefabs.FirstOrDefault(p => p.Name == update.prefabName);
+            var prefab = category.Prefabs.FirstOrDefault(p => p.Name == update.PrefabName);
             if (prefab == null)
             {
                 return;
             }
 
-            prefab.Fee = (float)Math.Round(update.newFee);
+            var newFee = ParkingFeeConfig.ClampFee((int)Math.Round(update.NewFee));
+
+            prefab.Fee = newFee;
             NotifyConfigChanged();
 
             // Districts: persist fee to ECS component on the entity (saved with the game)
-            if (IsDistrictsCategory(update.categoryType))
+            if (IsDistrictsCategory(update.CategoryType))
             {
-                if (TryParseDistrictEntityIndex(update.prefabName, out var entityIndex))
+                if (TryParseDistrictEntityIndex(update.PrefabName, out var entityIndex))
                 {
-                    SetDistrictFee(entityIndex, (int)Math.Round(update.newFee));
+                    SetDistrictFee(entityIndex, newFee);
                 }
                 return;
             }
 
             // Non-district: persist to JSON config
-            var modCategory = Mod.Config.Categories.FirstOrDefault(c => c.Type == update.categoryType);
+            var modCategory = Mod.Config.Categories.FirstOrDefault(c => c.Type == update.CategoryType);
             if (modCategory != null)
             {
-                var modPrefab = modCategory.Prefabs.FirstOrDefault(p => p.Name == update.prefabName);
+                var modPrefab = modCategory.Prefabs.FirstOrDefault(p => p.Name == update.PrefabName);
                 if (modPrefab != null)
                 {
-                    modPrefab.Fee = (int)Math.Round(update.newFee);
+                    modPrefab.Fee = newFee;
                 }
             }
 

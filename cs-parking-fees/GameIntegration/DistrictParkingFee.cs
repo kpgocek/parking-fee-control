@@ -16,6 +16,7 @@
 using Colossal.Serialization.Entities;
 using Unity.Entities;
 
+// Namespace and type name are part of the save-game serialization identity; do not change them.
 namespace ParkingFeeControl
 {
     /// <summary>
@@ -28,7 +29,7 @@ namespace ParkingFeeControl
     /// </summary>
     public struct DistrictParkingFee : IComponentData, IQueryTypeParameter, ISerializable
     {
-        public int m_Fee;
+        internal int m_Fee;
 
         public DistrictParkingFee(int fee)
         {
